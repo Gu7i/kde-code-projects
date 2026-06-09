@@ -1,0 +1,17 @@
+{
+    "KPlugin": {
+        "Authors": [
+            {
+                "Email": "gu7i.dev@gmail.com",
+                "Name": "Guti"
+            }
+        ],
+        "Category": "Utilities",
+        "Description": "Launcher rápido para proyectos de VS Code en ~/Code",
+        "Icon": "code-context",
+        "Id": "com.guti.codeprojects",
+        "Name": "Code Projects",
+        "Version": "1.0"
+    },
+    "X-Plasma-API-Minimum-Version": "6.0"
+}
