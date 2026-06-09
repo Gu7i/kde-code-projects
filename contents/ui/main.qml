@@ -13,6 +13,7 @@ PlasmoidItem {
 
     preferredRepresentation: compactRepresentation
 
+    // DataSource compartido solo para ejecutar up/down
     P5Support.DataSource {
         id: executable
         engine: "executable"
@@ -41,10 +42,6 @@ PlasmoidItem {
         var list = Plasmoid.configuration.projects.slice()
         list.splice(idx, 1)
         Plasmoid.configuration.projects = list
-    }
-
-    function dockerCmd(projectPath, action) {
-        executable.exec("sh -c \"cd '" + projectPath + "' && docker compose " + action + "\"")
     }
 
     Platform.FolderDialog {
@@ -120,22 +117,25 @@ PlasmoidItem {
         }
 
         PlasmaComponents.ScrollView {
+            id: projectsScrollView
             Layout.fillWidth: true
             Layout.fillHeight: true
             clip: true
             visible: Plasmoid.configuration.projects.length > 0
 
             Column {
-                width: parent.width
+                width: projectsScrollView.availableWidth
 
                 Repeater {
                     model: Plasmoid.configuration.projects
 
                     delegate: Column {
+                        id: projectItem
                         width: parent ? parent.width : 0
 
                         property string projectPath: modelData
                         property int projectIndex: index
+                        property bool isRunning: false
 
                         // Detecta si existe docker-compose en el proyecto
                         FolderListModel {
@@ -144,6 +144,39 @@ PlasmoidItem {
                             showFiles: true
                             showDirs: false
                             nameFilters: ["docker-compose.yml", "docker-compose.yaml", "compose.yml", "compose.yaml"]
+                            onCountChanged: if (count > 0) projectItem.checkStatus()
+                        }
+
+                        // DataSource propio para leer el estado del proyecto
+                        P5Support.DataSource {
+                            id: statusSource
+                            engine: "executable"
+                            connectedSources: []
+                            onNewData: (sourceName, data) => {
+                                projectItem.isRunning = data["stdout"].trim().length > 0
+                                disconnectSource(sourceName)
+                            }
+                        }
+
+                        function checkStatus() {
+                            var cmd = "docker compose --project-directory '" + projectPath + "' ps --status running -q 2>/dev/null"
+                            statusSource.connectSource(cmd)
+                        }
+
+                        // Refresca el estado al abrir el popup
+                        Connections {
+                            target: root
+                            function onExpandedChanged() {
+                                if (root.expanded && dockerFiles.count > 0)
+                                    projectItem.checkStatus()
+                            }
+                        }
+
+                        // Refresca unos segundos después de pulsar up/down
+                        Timer {
+                            id: refreshTimer
+                            interval: 3000
+                            onTriggered: projectItem.checkStatus()
                         }
 
                         RowLayout {
@@ -160,26 +193,36 @@ PlasmoidItem {
                                 }
                             }
 
-                            PlasmaComponents.ToolButton {
+                            // Botón docker: un solo slot que alterna entre up y down
+                            Item {
                                 visible: dockerFiles.count > 0
-                                width: visible ? implicitWidth : 0
                                 Layout.preferredWidth: Kirigami.Units.gridUnit * 1.5
                                 Layout.preferredHeight: Kirigami.Units.gridUnit * 1.5
                                 Layout.alignment: Qt.AlignVCenter
-                                icon.name: "media-playback-start"
-                                flat: true
-                                onClicked: root.dockerCmd(projectPath, "up -d")
-                            }
 
-                            PlasmaComponents.ToolButton {
-                                visible: dockerFiles.count > 0
-                                width: visible ? implicitWidth : 0
-                                Layout.preferredWidth: Kirigami.Units.gridUnit * 1.5
-                                Layout.preferredHeight: Kirigami.Units.gridUnit * 1.5
-                                Layout.alignment: Qt.AlignVCenter
-                                icon.name: "media-playback-stop"
-                                flat: true
-                                onClicked: root.dockerCmd(projectPath, "down")
+                                PlasmaComponents.ToolButton {
+                                    anchors.fill: parent
+                                    visible: !projectItem.isRunning
+                                    icon.name: "media-playback-start"
+                                    icon.color: Kirigami.Theme.positiveTextColor
+                                    flat: true
+                                    onClicked: {
+                                        executable.exec("sh -c \"cd '" + projectPath + "' && docker compose up -d\"")
+                                        refreshTimer.restart()
+                                    }
+                                }
+
+                                PlasmaComponents.ToolButton {
+                                    anchors.fill: parent
+                                    visible: projectItem.isRunning
+                                    icon.name: "media-playback-stop"
+                                    icon.color: Kirigami.Theme.negativeTextColor
+                                    flat: true
+                                    onClicked: {
+                                        executable.exec("sh -c \"cd '" + projectPath + "' && docker compose down\"")
+                                        refreshTimer.restart()
+                                    }
+                                }
                             }
 
                             PlasmaComponents.ToolButton {
