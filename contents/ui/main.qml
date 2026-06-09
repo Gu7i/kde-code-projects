@@ -240,6 +240,17 @@ PlasmoidItem {
                                 }
                             }
 
+                            // Logs - solo visible cuando está corriendo
+                            PlasmaComponents.ToolButton {
+                                visible: dockerFiles.count > 0 && projectItem.isRunning && !projectItem.isLoading
+                                Layout.preferredWidth: Kirigami.Units.gridUnit * 1.5
+                                Layout.preferredHeight: Kirigami.Units.gridUnit * 1.5
+                                Layout.alignment: Qt.AlignVCenter
+                                icon.name: "utilities-terminal"
+                                flat: true
+                                onClicked: executable.exec("konsole --workdir '" + projectPath + "' --hold -e docker compose logs -f")
+                            }
+
                             PlasmaComponents.ToolButton {
                                 Layout.preferredWidth: Kirigami.Units.gridUnit * 1.5
                                 Layout.preferredHeight: Kirigami.Units.gridUnit * 1.5
