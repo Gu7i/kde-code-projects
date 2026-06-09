@@ -13,6 +13,11 @@ if ! pacman -Qi plasma5support &>/dev/null; then
     sudo pacman -S --needed --noconfirm plasma5support
 fi
 
+if ! command -v konsole &>/dev/null; then
+    echo "Installing konsole (required for Docker logs)..."
+    sudo pacman -S --needed --noconfirm konsole
+fi
+
 if [ "$SCRIPT_DIR" = "$INSTALL_DIR" ]; then
     echo "Already running from install location, skipping copy."
 else

@@ -12,25 +12,30 @@ A KDE Plasma 6 panel widget to quickly open your VS Code projects.
 - Click a project name or icon to open it in VS Code
 - Remove projects from the list with the **−** button
 - Project list persists across reboots (stored in Plasma configuration)
-- If a project contains `docker-compose.yml` / `docker-compose.yaml` / `compose.yml` / `compose.yaml`, two extra buttons appear automatically: **▶ up** and **■ down**
+- **Docker Compose support** — if a project contains a compose file (`docker-compose.yml`, `docker-compose.yaml`, `compose.yml`, `compose.yaml`):
+  - Shows a **▶ green** button when services are stopped → runs `docker compose up -d`
+  - Shows a **■ red** button when services are running → runs `docker compose down`
+  - Shows a **terminal** button when running → opens Konsole with `docker compose logs -f`
+  - A spinner appears while the command is in progress
 - Lives in your panel — one click away at all times
 
 ## Preview
 
 ```
-┌──────────────────────────────────┐
-│ ⟨/⟩  Proyectos               [+] │
-├──────────────────────────────────┤
-│ [code] my-app             [▶][■][−] │  ← docker-compose detected
-│ [code] api-service        [▶][■][−] │  ← docker-compose detected
-│ [code] dotfiles                [−] │
-└──────────────────────────────────┘
+┌──────────────────────────────────────┐
+│ ⟨/⟩  Proyectos                   [+] │
+├──────────────────────────────────────┤
+│ [code] my-app          [■][⌨][−]    │  ← compose running
+│ [code] api-service     [▶][−]       │  ← compose stopped
+│ [code] dotfiles        [−]          │  ← no compose file
+└──────────────────────────────────────┘
 ```
 
 ## Requirements
 
 - KDE Plasma 6
 - `plasma5support` — for Docker Compose buttons (`sudo pacman -S plasma5support`)
+- `konsole` — for the Docker logs terminal (`sudo pacman -S konsole`)
 - VS Code installed and registered as URI handler for `vscode://`
 
 ## Installation
@@ -41,7 +46,7 @@ cd kde-code-projects
 ./install.sh
 ```
 
-The script copies the widget to `~/.local/share/plasma/plasmoids/` and restarts Plasma automatically.
+The script installs all dependencies, copies the widget to `~/.local/share/plasma/plasmoids/` and restarts Plasma automatically.
 
 ### Add to panel
 
