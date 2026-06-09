@@ -335,6 +335,43 @@ PlasmoidItem {
                                 PlasmaComponents.ToolTip { text: "Actualizar imágenes" }
                             }
 
+                            // Compose file selector
+                            PlasmaComponents.ToolButton {
+                                id: composeBtn
+                                visible: dockerFiles.count > 1 && !projectItem.isLoading
+                                Layout.preferredWidth: Kirigami.Units.gridUnit * 1.5
+                                Layout.preferredHeight: Kirigami.Units.gridUnit * 1.5
+                                Layout.alignment: Qt.AlignVCenter
+                                icon.name: "document-open"
+                                flat: true
+                                onClicked: composeMenu.popup()
+                                PlasmaComponents.ToolTip {
+                                    text: projectItem.composeFileNames.length > 0
+                                        ? projectItem.composeFileNames[projectItem.selectedComposeIndex]
+                                        : "Seleccionar compose"
+                                }
+
+                                PlasmaComponents.Menu {
+                                    id: composeMenu
+                                    Repeater {
+                                        model: projectItem.composeFileNames
+                                        PlasmaComponents.MenuItem {
+                                            text: modelData
+                                            checkable: true
+                                            checked: index === projectItem.selectedComposeIndex
+                                            onTriggered: {
+                                                if (projectItem.selectedComposeIndex !== index) {
+                                                    projectItem.selectedComposeIndex = index
+                                                    projectItem.isExpanded = false
+                                                    projectItem.isRunning = false
+                                                    projectItem.checkStatus()
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
                             // Remove project
                             PlasmaComponents.ToolButton {
                                 Layout.preferredWidth: Kirigami.Units.gridUnit * 1.5
@@ -344,38 +381,6 @@ PlasmoidItem {
                                 flat: true
                                 onClicked: root.removeProject(projectIndex)
                                 PlasmaComponents.ToolTip { text: "Eliminar proyecto" }
-                            }
-                        }
-
-                        // Compose file selector (only when multiple files exist)
-                        RowLayout {
-                            visible: dockerFiles.count > 1
-                            width: parent.width
-                            spacing: Kirigami.Units.smallSpacing
-
-                            Item { Layout.preferredWidth: Kirigami.Units.gridUnit * 1.5 }
-
-                            Kirigami.Icon {
-                                source: "document-open"
-                                Layout.preferredWidth: Kirigami.Units.iconSizes.small
-                                Layout.preferredHeight: Kirigami.Units.iconSizes.small
-                                opacity: 0.6
-                                Layout.alignment: Qt.AlignVCenter
-                            }
-
-                            PlasmaComponents.ComboBox {
-                                Layout.fillWidth: true
-                                model: projectItem.composeFileNames
-                                currentIndex: projectItem.selectedComposeIndex
-                                onCurrentIndexChanged: {
-                                    if (projectItem.selectedComposeIndex !== currentIndex) {
-                                        projectItem.selectedComposeIndex = currentIndex
-                                        projectItem.isExpanded = false
-                                        projectItem.isRunning = false
-                                        projectItem.checkStatus()
-                                    }
-                                }
-                                PlasmaComponents.ToolTip { text: "Archivo Compose activo" }
                             }
                         }
 
