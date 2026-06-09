@@ -167,14 +167,14 @@ PlasmoidItem {
                             folder: "file://" + projectPath
                             showFiles: true
                             showDirs: false
-                            nameFilters: ["docker-compose.yml", "docker-compose.yaml", "compose.yml", "compose.yaml"]
+                            nameFilters: ["docker-compose*.yml", "docker-compose*.yaml", "compose*.yml", "compose*.yaml"]
                             onCountChanged: {
                                 if (count === 0) return
                                 var names = []
                                 var paths = []
                                 for (var i = 0; i < count; i++) {
-                                    names.push(dockerFiles.fileName(i))
-                                    paths.push(dockerFiles.filePath(i))
+                                    names.push(dockerFiles.get(i, "fileName"))
+                                    paths.push(dockerFiles.get(i, "filePath"))
                                 }
                                 projectItem.composeFileNames = names
                                 projectItem.composeFilePaths = paths
