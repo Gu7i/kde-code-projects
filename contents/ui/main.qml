@@ -200,6 +200,16 @@ PlasmoidItem {
                         }
 
                         P5Support.DataSource {
+                            id: downSource
+                            engine: "executable"
+                            connectedSources: []
+                            onNewData: (sourceName) => {
+                                disconnectSource(sourceName)
+                                projectItem.checkStatus()
+                            }
+                        }
+
+                        P5Support.DataSource {
                             id: containersSource
                             engine: "executable"
                             connectedSources: []
@@ -249,7 +259,7 @@ PlasmoidItem {
                             id: refreshTimer
                             interval: 3000
                             repeat: true
-                            running: root.expanded && dockerFiles.count > 0 && !projectItem.isStarting
+                            running: root.expanded && dockerFiles.count > 0 && !projectItem.isStarting && !projectItem.isLoading
                             onTriggered: {
                                 projectItem.checkStatus()
                                 if (projectItem.isExpanded) projectItem.fetchContainers()
@@ -362,7 +372,7 @@ PlasmoidItem {
                                         projectItem.isLoading = true
                                         projectItem.isExpanded = false
                                         startupTimeoutTimer.stop()
-                                        executable.exec("sh -c \"" + projectItem.dockerComposeBase() + " down\"")
+                                        downSource.connectSource("sh -c \"" + projectItem.dockerComposeBase() + " down\"")
                                     }
                                     PlasmaComponents.ToolTip { text: "Detener Docker" }
                                 }
