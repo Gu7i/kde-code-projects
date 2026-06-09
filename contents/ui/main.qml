@@ -148,7 +148,8 @@ PlasmoidItem {
                         property string projectPath: modelData
                         property int projectIndex: index
                         property bool isRunning: false
-                        property bool isLoading: false
+                        property bool isLoading: false   // true only during docker down
+                        property bool isStarting: false  // true while compose up is starting
                         property bool isExpanded: false
                         property var containerList: []
 
@@ -188,10 +189,12 @@ PlasmoidItem {
                             engine: "executable"
                             connectedSources: []
                             onNewData: (sourceName, data) => {
-                                var running = data["stdout"].trim().length > 0
-                                projectItem.isRunning = running
-                                projectItem.isLoading = false
-                                if (!running) projectItem.isExpanded = false
+                                if (!projectItem.isStarting) {
+                                    var running = data["stdout"].trim().length > 0
+                                    projectItem.isRunning = running
+                                    projectItem.isLoading = false
+                                    if (!running) projectItem.isExpanded = false
+                                }
                                 disconnectSource(sourceName)
                             }
                         }
@@ -215,6 +218,19 @@ PlasmoidItem {
                                 }
                                 projectItem.containerList = containers
                                 disconnectSource(sourceName)
+
+                                if (projectItem.isStarting && containers.length > 0) {
+                                    var allSettled = containers.every(function(c) {
+                                        return c.state === "running" || c.state === "exited" || c.state === "dead"
+                                    })
+                                    if (allSettled) {
+                                        projectItem.isStarting = false
+                                        startupTimeoutTimer.stop()
+                                        projectItem.isRunning = containers.some(function(c) {
+                                            return c.state === "running"
+                                        })
+                                    }
+                                }
                             }
                         }
 
@@ -228,20 +244,45 @@ PlasmoidItem {
                             containersSource.connectSource(cmd)
                         }
 
-                        Connections {
-                            target: root
-                            function onExpandedChanged() {
-                                if (root.expanded && dockerFiles.count > 0)
-                                    projectItem.checkStatus()
-                            }
-                        }
-
+                        // Normal refresh poll (pauses during startup or when panel is closed)
                         Timer {
                             id: refreshTimer
                             interval: 3000
+                            repeat: true
+                            running: root.expanded && dockerFiles.count > 0 && !projectItem.isStarting
                             onTriggered: {
                                 projectItem.checkStatus()
                                 if (projectItem.isExpanded) projectItem.fetchContainers()
+                            }
+                        }
+
+                        // Fast poll during compose up (auto-runs while isStarting)
+                        Timer {
+                            id: startupPollTimer
+                            interval: 1000
+                            repeat: true
+                            running: projectItem.isStarting
+                            onTriggered: projectItem.fetchContainers()
+                        }
+
+                        // Safety timeout: give up waiting after 60s
+                        Timer {
+                            id: startupTimeoutTimer
+                            interval: 60000
+                            repeat: false
+                            onTriggered: {
+                                projectItem.isStarting = false
+                                projectItem.isRunning = projectItem.containerList.some(function(c) {
+                                    return c.state === "running"
+                                })
+                            }
+                        }
+
+                        Connections {
+                            target: root
+                            function onExpandedChanged() {
+                                if (root.expanded && dockerFiles.count > 0 && !projectItem.isStarting)
+                                    projectItem.checkStatus()
                             }
                         }
 
@@ -291,33 +332,37 @@ PlasmoidItem {
 
                                 PlasmaComponents.ToolButton {
                                     anchors.fill: parent
-                                    opacity: !projectItem.isLoading && !projectItem.isRunning ? 1.0 : 0.0
-                                    enabled: !projectItem.isLoading && !projectItem.isRunning
+                                    opacity: !projectItem.isLoading && !projectItem.isRunning && !projectItem.isStarting ? 1.0 : 0.0
+                                    enabled: !projectItem.isLoading && !projectItem.isRunning && !projectItem.isStarting
                                     icon.name: "media-playback-start"
                                     icon.color: Kirigami.Theme.positiveTextColor
                                     flat: true
                                     Behavior on opacity { NumberAnimation { duration: 150 } }
                                     onClicked: {
-                                        projectItem.isLoading = true
+                                        projectItem.isRunning = true
+                                        projectItem.isStarting = true
+                                        projectItem.isExpanded = true
                                         executable.exec("sh -c \"" + projectItem.dockerComposeBase() + " up -d\"")
-                                        refreshTimer.restart()
+                                        startupTimeoutTimer.restart()
+                                        projectItem.fetchContainers()
                                     }
                                     PlasmaComponents.ToolTip { text: "Iniciar Docker" }
                                 }
 
                                 PlasmaComponents.ToolButton {
                                     anchors.fill: parent
-                                    opacity: !projectItem.isLoading && projectItem.isRunning ? 1.0 : 0.0
-                                    enabled: !projectItem.isLoading && projectItem.isRunning
+                                    opacity: !projectItem.isLoading && (projectItem.isRunning || projectItem.isStarting) ? 1.0 : 0.0
+                                    enabled: !projectItem.isLoading && (projectItem.isRunning || projectItem.isStarting)
                                     icon.name: "media-playback-stop"
                                     icon.color: Kirigami.Theme.negativeTextColor
                                     flat: true
                                     Behavior on opacity { NumberAnimation { duration: 150 } }
                                     onClicked: {
+                                        projectItem.isStarting = false
                                         projectItem.isLoading = true
                                         projectItem.isExpanded = false
+                                        startupTimeoutTimer.stop()
                                         executable.exec("sh -c \"" + projectItem.dockerComposeBase() + " down\"")
-                                        refreshTimer.restart()
                                     }
                                     PlasmaComponents.ToolTip { text: "Detener Docker" }
                                 }
@@ -325,7 +370,7 @@ PlasmoidItem {
 
                             // Pull images
                             PlasmaComponents.ToolButton {
-                                visible: dockerFiles.count > 0 && !projectItem.isLoading
+                                visible: dockerFiles.count > 0 && !projectItem.isLoading && !projectItem.isStarting
                                 Layout.preferredWidth: Kirigami.Units.gridUnit * 1.5
                                 Layout.preferredHeight: Kirigami.Units.gridUnit * 1.5
                                 Layout.alignment: Qt.AlignVCenter
@@ -338,7 +383,7 @@ PlasmoidItem {
                             // Compose file selector
                             PlasmaComponents.ToolButton {
                                 id: composeBtn
-                                visible: dockerFiles.count > 1 && !projectItem.isLoading
+                                visible: dockerFiles.count > 1 && !projectItem.isLoading && !projectItem.isStarting
                                 Layout.preferredWidth: Kirigami.Units.gridUnit * 1.5
                                 Layout.preferredHeight: Kirigami.Units.gridUnit * 1.5
                                 Layout.alignment: Qt.AlignVCenter
@@ -386,8 +431,20 @@ PlasmoidItem {
 
                         // Container tree
                         Column {
-                            visible: projectItem.isExpanded && projectItem.isRunning
+                            visible: projectItem.isExpanded && (projectItem.isRunning || projectItem.isStarting)
                             width: parent.width
+
+                            // Placeholder while starting and no containers fetched yet
+                            PlasmaComponents.Label {
+                                visible: projectItem.isStarting && projectItem.containerList.length === 0
+                                width: parent.width
+                                leftPadding: Kirigami.Units.gridUnit * 1.5 + Kirigami.Units.smallSpacing
+                                topPadding: Kirigami.Units.smallSpacing
+                                bottomPadding: Kirigami.Units.smallSpacing
+                                text: "Iniciando servicios..."
+                                opacity: 0.6
+                                font.pixelSize: Kirigami.Units.gridUnit * 0.8
+                            }
 
                             Repeater {
                                 model: projectItem.containerList
@@ -398,23 +455,43 @@ PlasmoidItem {
 
                                     Item { Layout.preferredWidth: Kirigami.Units.gridUnit * 1.2 }
 
+                                    // Status dot: pulsing while starting, solid when settled
                                     Rectangle {
+                                        id: statusDot
                                         width: 7
                                         height: 7
                                         radius: 4
                                         Layout.alignment: Qt.AlignVCenter
-                                        color: modelData.state === "running"
-                                            ? Kirigami.Theme.positiveTextColor
-                                            : modelData.state === "exited"
-                                                ? Kirigami.Theme.negativeTextColor
-                                                : Kirigami.Theme.textColor
-                                        opacity: modelData.state === "running" || modelData.state === "exited" ? 1.0 : 0.5
+
+                                        property bool isSettled: modelData.state === "running" ||
+                                                                  modelData.state === "exited"  ||
+                                                                  modelData.state === "dead"
+                                        property bool isPending: projectItem.isStarting && !isSettled
+
+                                        color: isPending
+                                            ? Kirigami.Theme.neutralTextColor
+                                            : modelData.state === "running"
+                                                ? Kirigami.Theme.positiveTextColor
+                                                : modelData.state === "exited" || modelData.state === "dead"
+                                                    ? Kirigami.Theme.negativeTextColor
+                                                    : Kirigami.Theme.textColor
+
+                                        opacity: isSettled ? 1.0 : isPending ? 1.0 : 0.5
+
+                                        SequentialAnimation on opacity {
+                                            running: statusDot.isPending
+                                            loops: Animation.Infinite
+                                            NumberAnimation { to: 0.2; duration: 500; easing.type: Easing.InOutSine }
+                                            NumberAnimation { to: 1.0; duration: 500; easing.type: Easing.InOutSine }
+                                        }
                                     }
 
                                     PlasmaComponents.Label {
                                         text: modelData.service
                                         Layout.fillWidth: true
                                         elide: Text.ElideRight
+                                        opacity: statusDot.isPending ? 0.6 : 1.0
+                                        Behavior on opacity { NumberAnimation { duration: 200 } }
                                     }
 
                                     PlasmaComponents.Label {
@@ -430,6 +507,7 @@ PlasmoidItem {
                                         Layout.preferredHeight: Kirigami.Units.gridUnit * 1.4
                                         icon.name: "utilities-terminal"
                                         flat: true
+                                        visible: !statusDot.isPending
                                         onClicked: executable.exec("konsole --workdir '" + projectPath + "' --hold -e sh -c \"" + projectItem.dockerComposeBase() + " logs -f " + modelData.service + "\"")
                                         PlasmaComponents.ToolTip { text: "Ver logs" }
                                     }
@@ -439,10 +517,10 @@ PlasmoidItem {
                                         Layout.preferredHeight: Kirigami.Units.gridUnit * 1.4
                                         icon.name: "system-reboot"
                                         flat: true
+                                        visible: !statusDot.isPending
                                         onClicked: {
                                             projectItem.isLoading = true
                                             executable.exec("sh -c \"" + projectItem.dockerComposeBase() + " restart " + modelData.service + "\"")
-                                            refreshTimer.restart()
                                         }
                                         PlasmaComponents.ToolTip { text: "Reiniciar" }
                                     }
@@ -452,6 +530,7 @@ PlasmoidItem {
                                         Layout.preferredHeight: Kirigami.Units.gridUnit * 1.4
                                         icon.name: "run-build"
                                         flat: true
+                                        visible: !statusDot.isPending
                                         onClicked: executable.exec("konsole --workdir '" + projectPath + "' --hold -e sh -c \"" + projectItem.dockerComposeBase() + " build " + modelData.service + "\"")
                                         PlasmaComponents.ToolTip { text: "Construir imagen" }
                                     }
@@ -461,7 +540,7 @@ PlasmoidItem {
                                         Layout.preferredHeight: Kirigami.Units.gridUnit * 1.4
                                         icon.name: "dialog-terminal"
                                         flat: true
-                                        visible: modelData.state === "running"
+                                        visible: !statusDot.isPending && modelData.state === "running"
                                         onClicked: executable.exec("konsole --workdir '" + projectPath + "' -e sh -c \"" + projectItem.dockerComposeBase() + " exec " + modelData.service + " sh\"")
                                         PlasmaComponents.ToolTip { text: "Abrir terminal" }
                                     }
@@ -471,7 +550,7 @@ PlasmoidItem {
                                         Layout.preferredHeight: Kirigami.Units.gridUnit * 1.4
                                         icon.name: "internet-web-browser"
                                         flat: true
-                                        visible: modelData.state === "running" && modelData.ports.length > 0
+                                        visible: !statusDot.isPending && modelData.state === "running" && modelData.ports.length > 0
                                         onClicked: {
                                             var re = /:(\d+)->/
                                             var m = re.exec(modelData.ports)
