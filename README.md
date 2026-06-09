@@ -33,13 +33,13 @@ A KDE Plasma 6 panel widget to quickly open your VS Code projects.
 
 ## Installation
 
-### Manual
-
 ```bash
 git clone https://github.com/Gu7i/kde-code-projects.git
-cp -r kde-code-projects ~/.local/share/plasma/plasmoids/com.guti.codeprojects
-systemctl --user restart plasma-plasmashell
+cd kde-code-projects
+./install.sh
 ```
+
+The script copies the widget to `~/.local/share/plasma/plasmoids/` and restarts Plasma automatically.
 
 ### Add to panel
 
@@ -65,7 +65,8 @@ xdg-mime query default x-scheme-handler/vscode
 ## Project structure
 
 ```
-com.guti.codeprojects/
+kde-code-projects/
+├── install.sh             # Installation script
 ├── metadata.json          # Plasma plugin metadata
 └── contents/
     ├── config/
