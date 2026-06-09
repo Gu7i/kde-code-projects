@@ -136,6 +136,7 @@ PlasmoidItem {
                         property string projectPath: modelData
                         property int projectIndex: index
                         property bool isRunning: false
+                        property bool isLoading: false
 
                         // Detecta si existe docker-compose en el proyecto
                         FolderListModel {
@@ -154,6 +155,7 @@ PlasmoidItem {
                             connectedSources: []
                             onNewData: (sourceName, data) => {
                                 projectItem.isRunning = data["stdout"].trim().length > 0
+                                projectItem.isLoading = false
                                 disconnectSource(sourceName)
                             }
                         }
@@ -193,20 +195,30 @@ PlasmoidItem {
                                 }
                             }
 
-                            // Botón docker: un solo slot que alterna entre up y down
+                            // Slot docker: spinner → up (verde) → down (rojo)
                             Item {
                                 visible: dockerFiles.count > 0
                                 Layout.preferredWidth: Kirigami.Units.gridUnit * 1.5
                                 Layout.preferredHeight: Kirigami.Units.gridUnit * 1.5
                                 Layout.alignment: Qt.AlignVCenter
 
+                                PlasmaComponents.BusyIndicator {
+                                    anchors.fill: parent
+                                    running: projectItem.isLoading
+                                    opacity: projectItem.isLoading ? 1.0 : 0.0
+                                    Behavior on opacity { NumberAnimation { duration: 150 } }
+                                }
+
                                 PlasmaComponents.ToolButton {
                                     anchors.fill: parent
-                                    visible: !projectItem.isRunning
+                                    opacity: !projectItem.isLoading && !projectItem.isRunning ? 1.0 : 0.0
+                                    enabled: !projectItem.isLoading && !projectItem.isRunning
                                     icon.name: "media-playback-start"
                                     icon.color: Kirigami.Theme.positiveTextColor
                                     flat: true
+                                    Behavior on opacity { NumberAnimation { duration: 150 } }
                                     onClicked: {
+                                        projectItem.isLoading = true
                                         executable.exec("sh -c \"cd '" + projectPath + "' && docker compose up -d\"")
                                         refreshTimer.restart()
                                     }
@@ -214,11 +226,14 @@ PlasmoidItem {
 
                                 PlasmaComponents.ToolButton {
                                     anchors.fill: parent
-                                    visible: projectItem.isRunning
+                                    opacity: !projectItem.isLoading && projectItem.isRunning ? 1.0 : 0.0
+                                    enabled: !projectItem.isLoading && projectItem.isRunning
                                     icon.name: "media-playback-stop"
                                     icon.color: Kirigami.Theme.negativeTextColor
                                     flat: true
+                                    Behavior on opacity { NumberAnimation { duration: 150 } }
                                     onClicked: {
+                                        projectItem.isLoading = true
                                         executable.exec("sh -c \"cd '" + projectPath + "' && docker compose down\"")
                                         refreshTimer.restart()
                                     }
