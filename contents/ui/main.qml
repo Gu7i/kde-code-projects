@@ -152,13 +152,35 @@ PlasmoidItem {
                         property bool isExpanded: false
                         property var containerList: []
 
+                        property var composeFilePaths: []
+                        property var composeFileNames: []
+                        property int selectedComposeIndex: 0
+
+                        function dockerComposeBase() {
+                            if (composeFilePaths.length > 0)
+                                return "docker compose -f '" + composeFilePaths[selectedComposeIndex] + "'"
+                            return "docker compose --project-directory '" + projectPath + "'"
+                        }
+
                         FolderListModel {
                             id: dockerFiles
                             folder: "file://" + projectPath
                             showFiles: true
                             showDirs: false
                             nameFilters: ["docker-compose.yml", "docker-compose.yaml", "compose.yml", "compose.yaml"]
-                            onCountChanged: if (count > 0) projectItem.checkStatus()
+                            onCountChanged: {
+                                if (count === 0) return
+                                var names = []
+                                var paths = []
+                                for (var i = 0; i < count; i++) {
+                                    names.push(dockerFiles.fileName(i))
+                                    paths.push(dockerFiles.filePath(i))
+                                }
+                                projectItem.composeFileNames = names
+                                projectItem.composeFilePaths = paths
+                                projectItem.selectedComposeIndex = 0
+                                projectItem.checkStatus()
+                            }
                         }
 
                         P5Support.DataSource {
@@ -197,12 +219,12 @@ PlasmoidItem {
                         }
 
                         function checkStatus() {
-                            var cmd = "docker compose --project-directory '" + projectPath + "' ps --status running -q 2>/dev/null"
+                            var cmd = dockerComposeBase() + " ps --status running -q 2>/dev/null"
                             statusSource.connectSource(cmd)
                         }
 
                         function fetchContainers() {
-                            var cmd = "docker compose --project-directory '" + projectPath + "' ps --format '{{.Service}}|{{.State}}|{{.Ports}}' 2>/dev/null"
+                            var cmd = dockerComposeBase() + " ps --format '{{.Service}}|{{.State}}|{{.Ports}}' 2>/dev/null"
                             containersSource.connectSource(cmd)
                         }
 
@@ -277,7 +299,7 @@ PlasmoidItem {
                                     Behavior on opacity { NumberAnimation { duration: 150 } }
                                     onClicked: {
                                         projectItem.isLoading = true
-                                        executable.exec("sh -c \"cd '" + projectPath + "' && docker compose up -d\"")
+                                        executable.exec("sh -c \"" + projectItem.dockerComposeBase() + " up -d\"")
                                         refreshTimer.restart()
                                     }
                                     PlasmaComponents.ToolTip { text: "Iniciar Docker" }
@@ -294,7 +316,7 @@ PlasmoidItem {
                                     onClicked: {
                                         projectItem.isLoading = true
                                         projectItem.isExpanded = false
-                                        executable.exec("sh -c \"cd '" + projectPath + "' && docker compose down\"")
+                                        executable.exec("sh -c \"" + projectItem.dockerComposeBase() + " down\"")
                                         refreshTimer.restart()
                                     }
                                     PlasmaComponents.ToolTip { text: "Detener Docker" }
@@ -309,7 +331,7 @@ PlasmoidItem {
                                 Layout.alignment: Qt.AlignVCenter
                                 icon.name: "edit-download"
                                 flat: true
-                                onClicked: executable.exec("konsole --workdir '" + projectPath + "' --hold -e docker compose --project-directory '" + projectPath + "' pull")
+                                onClicked: executable.exec("konsole --workdir '" + projectPath + "' --hold -e sh -c \"" + projectItem.dockerComposeBase() + " pull\"")
                                 PlasmaComponents.ToolTip { text: "Actualizar imágenes" }
                             }
 
@@ -322,6 +344,38 @@ PlasmoidItem {
                                 flat: true
                                 onClicked: root.removeProject(projectIndex)
                                 PlasmaComponents.ToolTip { text: "Eliminar proyecto" }
+                            }
+                        }
+
+                        // Compose file selector (only when multiple files exist)
+                        RowLayout {
+                            visible: dockerFiles.count > 1
+                            width: parent.width
+                            spacing: Kirigami.Units.smallSpacing
+
+                            Item { Layout.preferredWidth: Kirigami.Units.gridUnit * 1.5 }
+
+                            Kirigami.Icon {
+                                source: "document-open"
+                                Layout.preferredWidth: Kirigami.Units.iconSizes.small
+                                Layout.preferredHeight: Kirigami.Units.iconSizes.small
+                                opacity: 0.6
+                                Layout.alignment: Qt.AlignVCenter
+                            }
+
+                            PlasmaComponents.ComboBox {
+                                Layout.fillWidth: true
+                                model: projectItem.composeFileNames
+                                currentIndex: projectItem.selectedComposeIndex
+                                onCurrentIndexChanged: {
+                                    if (projectItem.selectedComposeIndex !== currentIndex) {
+                                        projectItem.selectedComposeIndex = currentIndex
+                                        projectItem.isExpanded = false
+                                        projectItem.isRunning = false
+                                        projectItem.checkStatus()
+                                    }
+                                }
+                                PlasmaComponents.ToolTip { text: "Archivo Compose activo" }
                             }
                         }
 
@@ -371,7 +425,7 @@ PlasmoidItem {
                                         Layout.preferredHeight: Kirigami.Units.gridUnit * 1.4
                                         icon.name: "utilities-terminal"
                                         flat: true
-                                        onClicked: executable.exec("konsole --workdir '" + projectPath + "' --hold -e docker compose --project-directory '" + projectPath + "' logs -f " + modelData.service)
+                                        onClicked: executable.exec("konsole --workdir '" + projectPath + "' --hold -e sh -c \"" + projectItem.dockerComposeBase() + " logs -f " + modelData.service + "\"")
                                         PlasmaComponents.ToolTip { text: "Ver logs" }
                                     }
 
@@ -382,7 +436,7 @@ PlasmoidItem {
                                         flat: true
                                         onClicked: {
                                             projectItem.isLoading = true
-                                            executable.exec("sh -c \"docker compose --project-directory '" + projectPath + "' restart " + modelData.service + "\"")
+                                            executable.exec("sh -c \"" + projectItem.dockerComposeBase() + " restart " + modelData.service + "\"")
                                             refreshTimer.restart()
                                         }
                                         PlasmaComponents.ToolTip { text: "Reiniciar" }
@@ -393,7 +447,7 @@ PlasmoidItem {
                                         Layout.preferredHeight: Kirigami.Units.gridUnit * 1.4
                                         icon.name: "run-build"
                                         flat: true
-                                        onClicked: executable.exec("konsole --workdir '" + projectPath + "' --hold -e docker compose --project-directory '" + projectPath + "' build " + modelData.service)
+                                        onClicked: executable.exec("konsole --workdir '" + projectPath + "' --hold -e sh -c \"" + projectItem.dockerComposeBase() + " build " + modelData.service + "\"")
                                         PlasmaComponents.ToolTip { text: "Construir imagen" }
                                     }
 
@@ -403,7 +457,7 @@ PlasmoidItem {
                                         icon.name: "dialog-terminal"
                                         flat: true
                                         visible: modelData.state === "running"
-                                        onClicked: executable.exec("konsole --workdir '" + projectPath + "' -e docker compose --project-directory '" + projectPath + "' exec " + modelData.service + " sh")
+                                        onClicked: executable.exec("konsole --workdir '" + projectPath + "' -e sh -c \"" + projectItem.dockerComposeBase() + " exec " + modelData.service + " sh\"")
                                         PlasmaComponents.ToolTip { text: "Abrir terminal" }
                                     }
 
