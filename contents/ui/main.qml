@@ -13,7 +13,6 @@ PlasmoidItem {
 
     preferredRepresentation: compactRepresentation
 
-    // DataSource compartido solo para ejecutar up/down
     P5Support.DataSource {
         id: executable
         engine: "executable"
@@ -44,6 +43,18 @@ PlasmoidItem {
         Plasmoid.configuration.projects = list
     }
 
+    function extractFirstPort(portsStr) {
+        if (!portsStr || portsStr.length === 0) return ""
+        var seen = {}
+        var ports = []
+        var re = /:(\d+)->/g
+        var m
+        while ((m = re.exec(portsStr)) !== null) {
+            if (!seen[m[1]]) { seen[m[1]] = true; ports.push(m[1]) }
+        }
+        return ports.join(" · ")
+    }
+
     Platform.FolderDialog {
         id: folderDialog
         title: "Seleccionar carpeta del proyecto"
@@ -71,10 +82,10 @@ PlasmoidItem {
     fullRepresentation: ColumnLayout {
         spacing: 0
 
-        Layout.minimumWidth: Kirigami.Units.gridUnit * 20
-        Layout.preferredWidth: Kirigami.Units.gridUnit * 24
+        Layout.minimumWidth: Kirigami.Units.gridUnit * 22
+        Layout.preferredWidth: Kirigami.Units.gridUnit * 26
         Layout.minimumHeight: Kirigami.Units.gridUnit * 10
-        Layout.preferredHeight: Kirigami.Units.gridUnit * 25
+        Layout.preferredHeight: Kirigami.Units.gridUnit * 28
 
         PlasmaExtras.PlasmoidHeading {
             Layout.fillWidth: true
@@ -98,6 +109,7 @@ PlasmoidItem {
                     icon.name: "list-add"
                     flat: true
                     onClicked: folderDialog.open()
+                    PlasmaComponents.ToolTip { text: "Añadir proyecto" }
                 }
             }
         }
@@ -137,8 +149,9 @@ PlasmoidItem {
                         property int projectIndex: index
                         property bool isRunning: false
                         property bool isLoading: false
+                        property bool isExpanded: false
+                        property var containerList: []
 
-                        // Detecta si existe docker-compose en el proyecto
                         FolderListModel {
                             id: dockerFiles
                             folder: "file://" + projectPath
@@ -148,14 +161,37 @@ PlasmoidItem {
                             onCountChanged: if (count > 0) projectItem.checkStatus()
                         }
 
-                        // DataSource propio para leer el estado del proyecto
                         P5Support.DataSource {
                             id: statusSource
                             engine: "executable"
                             connectedSources: []
                             onNewData: (sourceName, data) => {
-                                projectItem.isRunning = data["stdout"].trim().length > 0
+                                var running = data["stdout"].trim().length > 0
+                                projectItem.isRunning = running
                                 projectItem.isLoading = false
+                                if (!running) projectItem.isExpanded = false
+                                disconnectSource(sourceName)
+                            }
+                        }
+
+                        P5Support.DataSource {
+                            id: containersSource
+                            engine: "executable"
+                            connectedSources: []
+                            onNewData: (sourceName, data) => {
+                                var lines = data["stdout"].trim().split("\n").filter(l => l.length > 0)
+                                var containers = []
+                                for (var i = 0; i < lines.length; i++) {
+                                    var parts = lines[i].split("|")
+                                    if (parts.length >= 2) {
+                                        containers.push({
+                                            service: parts[0].trim(),
+                                            state: parts[1].trim(),
+                                            ports: parts.length > 2 ? parts[2].trim() : ""
+                                        })
+                                    }
+                                }
+                                projectItem.containerList = containers
                                 disconnectSource(sourceName)
                             }
                         }
@@ -165,7 +201,11 @@ PlasmoidItem {
                             statusSource.connectSource(cmd)
                         }
 
-                        // Refresca el estado al abrir el popup
+                        function fetchContainers() {
+                            var cmd = "docker compose --project-directory '" + projectPath + "' ps --format '{{.Service}}|{{.State}}|{{.Ports}}' 2>/dev/null"
+                            containersSource.connectSource(cmd)
+                        }
+
                         Connections {
                             target: root
                             function onExpandedChanged() {
@@ -174,13 +214,16 @@ PlasmoidItem {
                             }
                         }
 
-                        // Refresca unos segundos después de pulsar up/down
                         Timer {
                             id: refreshTimer
                             interval: 3000
-                            onTriggered: projectItem.checkStatus()
+                            onTriggered: {
+                                projectItem.checkStatus()
+                                if (projectItem.isExpanded) projectItem.fetchContainers()
+                            }
                         }
 
+                        // Project row
                         RowLayout {
                             width: parent.width
                             spacing: 0
@@ -195,7 +238,22 @@ PlasmoidItem {
                                 }
                             }
 
-                            // Slot docker: spinner → up (verde) → down (rojo)
+                            // Expand/collapse tree
+                            PlasmaComponents.ToolButton {
+                                visible: dockerFiles.count > 0 && projectItem.isRunning && !projectItem.isLoading
+                                Layout.preferredWidth: Kirigami.Units.gridUnit * 1.5
+                                Layout.preferredHeight: Kirigami.Units.gridUnit * 1.5
+                                Layout.alignment: Qt.AlignVCenter
+                                icon.name: projectItem.isExpanded ? "arrow-up" : "arrow-down"
+                                flat: true
+                                onClicked: {
+                                    projectItem.isExpanded = !projectItem.isExpanded
+                                    if (projectItem.isExpanded) projectItem.fetchContainers()
+                                }
+                                PlasmaComponents.ToolTip { text: projectItem.isExpanded ? "Colapsar servicios" : "Ver servicios" }
+                            }
+
+                            // Docker up/stop/spinner
                             Item {
                                 visible: dockerFiles.count > 0
                                 Layout.preferredWidth: Kirigami.Units.gridUnit * 1.5
@@ -222,6 +280,7 @@ PlasmoidItem {
                                         executable.exec("sh -c \"cd '" + projectPath + "' && docker compose up -d\"")
                                         refreshTimer.restart()
                                     }
+                                    PlasmaComponents.ToolTip { text: "Iniciar Docker" }
                                 }
 
                                 PlasmaComponents.ToolButton {
@@ -234,23 +293,27 @@ PlasmoidItem {
                                     Behavior on opacity { NumberAnimation { duration: 150 } }
                                     onClicked: {
                                         projectItem.isLoading = true
+                                        projectItem.isExpanded = false
                                         executable.exec("sh -c \"cd '" + projectPath + "' && docker compose down\"")
                                         refreshTimer.restart()
                                     }
+                                    PlasmaComponents.ToolTip { text: "Detener Docker" }
                                 }
                             }
 
-                            // Logs - solo visible cuando está corriendo
+                            // Pull images
                             PlasmaComponents.ToolButton {
-                                visible: dockerFiles.count > 0 && projectItem.isRunning && !projectItem.isLoading
+                                visible: dockerFiles.count > 0 && !projectItem.isLoading
                                 Layout.preferredWidth: Kirigami.Units.gridUnit * 1.5
                                 Layout.preferredHeight: Kirigami.Units.gridUnit * 1.5
                                 Layout.alignment: Qt.AlignVCenter
-                                icon.name: "utilities-terminal"
+                                icon.name: "edit-download"
                                 flat: true
-                                onClicked: executable.exec("konsole --workdir '" + projectPath + "' --hold -e docker compose logs -f")
+                                onClicked: executable.exec("konsole --workdir '" + projectPath + "' --hold -e docker compose --project-directory '" + projectPath + "' pull")
+                                PlasmaComponents.ToolTip { text: "Actualizar imágenes" }
                             }
 
+                            // Remove project
                             PlasmaComponents.ToolButton {
                                 Layout.preferredWidth: Kirigami.Units.gridUnit * 1.5
                                 Layout.preferredHeight: Kirigami.Units.gridUnit * 1.5
@@ -258,7 +321,114 @@ PlasmoidItem {
                                 icon.name: "list-remove"
                                 flat: true
                                 onClicked: root.removeProject(projectIndex)
+                                PlasmaComponents.ToolTip { text: "Eliminar proyecto" }
                             }
+                        }
+
+                        // Container tree
+                        Column {
+                            visible: projectItem.isExpanded && projectItem.isRunning
+                            width: parent.width
+
+                            Repeater {
+                                model: projectItem.containerList
+
+                                delegate: RowLayout {
+                                    width: parent ? parent.width : 0
+                                    spacing: Kirigami.Units.smallSpacing
+
+                                    Item { Layout.preferredWidth: Kirigami.Units.gridUnit * 1.2 }
+
+                                    Rectangle {
+                                        width: 7
+                                        height: 7
+                                        radius: 4
+                                        Layout.alignment: Qt.AlignVCenter
+                                        color: modelData.state === "running"
+                                            ? Kirigami.Theme.positiveTextColor
+                                            : modelData.state === "exited"
+                                                ? Kirigami.Theme.negativeTextColor
+                                                : Kirigami.Theme.textColor
+                                        opacity: modelData.state === "running" || modelData.state === "exited" ? 1.0 : 0.5
+                                    }
+
+                                    PlasmaComponents.Label {
+                                        text: modelData.service
+                                        Layout.fillWidth: true
+                                        elide: Text.ElideRight
+                                    }
+
+                                    PlasmaComponents.Label {
+                                        text: root.extractFirstPort(modelData.ports)
+                                        visible: text.length > 0
+                                        opacity: 0.6
+                                        font.pixelSize: Kirigami.Units.gridUnit * 0.7
+                                        Layout.alignment: Qt.AlignVCenter
+                                    }
+
+                                    PlasmaComponents.ToolButton {
+                                        Layout.preferredWidth: Kirigami.Units.gridUnit * 1.4
+                                        Layout.preferredHeight: Kirigami.Units.gridUnit * 1.4
+                                        icon.name: "utilities-terminal"
+                                        flat: true
+                                        onClicked: executable.exec("konsole --workdir '" + projectPath + "' --hold -e docker compose --project-directory '" + projectPath + "' logs -f " + modelData.service)
+                                        PlasmaComponents.ToolTip { text: "Ver logs" }
+                                    }
+
+                                    PlasmaComponents.ToolButton {
+                                        Layout.preferredWidth: Kirigami.Units.gridUnit * 1.4
+                                        Layout.preferredHeight: Kirigami.Units.gridUnit * 1.4
+                                        icon.name: "system-reboot"
+                                        flat: true
+                                        onClicked: {
+                                            projectItem.isLoading = true
+                                            executable.exec("sh -c \"docker compose --project-directory '" + projectPath + "' restart " + modelData.service + "\"")
+                                            refreshTimer.restart()
+                                        }
+                                        PlasmaComponents.ToolTip { text: "Reiniciar" }
+                                    }
+
+                                    PlasmaComponents.ToolButton {
+                                        Layout.preferredWidth: Kirigami.Units.gridUnit * 1.4
+                                        Layout.preferredHeight: Kirigami.Units.gridUnit * 1.4
+                                        icon.name: "run-build"
+                                        flat: true
+                                        onClicked: executable.exec("konsole --workdir '" + projectPath + "' --hold -e docker compose --project-directory '" + projectPath + "' build " + modelData.service)
+                                        PlasmaComponents.ToolTip { text: "Construir imagen" }
+                                    }
+
+                                    PlasmaComponents.ToolButton {
+                                        Layout.preferredWidth: Kirigami.Units.gridUnit * 1.4
+                                        Layout.preferredHeight: Kirigami.Units.gridUnit * 1.4
+                                        icon.name: "dialog-terminal"
+                                        flat: true
+                                        visible: modelData.state === "running"
+                                        onClicked: executable.exec("konsole --workdir '" + projectPath + "' -e docker compose --project-directory '" + projectPath + "' exec " + modelData.service + " sh")
+                                        PlasmaComponents.ToolTip { text: "Abrir terminal" }
+                                    }
+
+                                    PlasmaComponents.ToolButton {
+                                        Layout.preferredWidth: Kirigami.Units.gridUnit * 1.4
+                                        Layout.preferredHeight: Kirigami.Units.gridUnit * 1.4
+                                        icon.name: "internet-web-browser"
+                                        flat: true
+                                        visible: modelData.state === "running" && modelData.ports.length > 0
+                                        onClicked: {
+                                            var re = /:(\d+)->/
+                                            var m = re.exec(modelData.ports)
+                                            if (m) Qt.openUrlExternally("http://localhost:" + m[1])
+                                        }
+                                        PlasmaComponents.ToolTip { text: "Abrir en navegador" }
+                                    }
+                                }
+                            }
+
+                            Item { width: 1; height: Kirigami.Units.smallSpacing }
+                        }
+
+                        Kirigami.Separator {
+                            width: parent.width
+                            opacity: 0.3
                         }
                     }
                 }
