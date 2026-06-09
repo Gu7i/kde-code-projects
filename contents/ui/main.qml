@@ -22,7 +22,7 @@ PlasmoidItem {
     }
 
     function openInVSCode(projectPath) {
-        Qt.openUrlExternally("vscode://file/" + projectPath)
+        executable.exec("code --new-window '" + projectPath + "'")
     }
 
     function projectName(path) {
