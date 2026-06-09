@@ -1,15 +1,25 @@
 import QtQuick
 import QtQuick.Layouts
 import Qt.labs.platform as Platform
+import Qt.labs.folderlistmodel
 import org.kde.plasma.plasmoid
 import org.kde.plasma.components 3.0 as PlasmaComponents
 import org.kde.plasma.extras 2.0 as PlasmaExtras
 import org.kde.kirigami 2.20 as Kirigami
+import org.kde.plasma.plasma5support as P5Support
 
 PlasmoidItem {
     id: root
 
     preferredRepresentation: compactRepresentation
+
+    P5Support.DataSource {
+        id: executable
+        engine: "executable"
+        connectedSources: []
+        onNewData: (sourceName) => disconnectSource(sourceName)
+        function exec(cmd) { connectSource(cmd) }
+    }
 
     function openInVSCode(projectPath) {
         Qt.openUrlExternally("vscode://file/" + projectPath)
@@ -31,6 +41,10 @@ PlasmoidItem {
         var list = Plasmoid.configuration.projects.slice()
         list.splice(idx, 1)
         Plasmoid.configuration.projects = list
+    }
+
+    function dockerCmd(projectPath, action) {
+        executable.exec("sh -c \"cd '" + projectPath + "' && docker compose " + action + "\"")
     }
 
     Platform.FolderDialog {
@@ -91,7 +105,6 @@ PlasmoidItem {
             }
         }
 
-        // Estado vacío
         Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
@@ -106,7 +119,6 @@ PlasmoidItem {
             }
         }
 
-        // Lista de proyectos
         PlasmaComponents.ScrollView {
             Layout.fillWidth: true
             Layout.fillHeight: true
@@ -119,28 +131,65 @@ PlasmoidItem {
                 Repeater {
                     model: Plasmoid.configuration.projects
 
-                    delegate: RowLayout {
+                    delegate: Column {
                         width: parent ? parent.width : 0
-                        spacing: 0
 
-                        PlasmaComponents.ItemDelegate {
-                            Layout.fillWidth: true
-                            icon.name: "code"
-                            text: root.projectName(modelData)
+                        property string projectPath: modelData
+                        property int projectIndex: index
 
-                            onClicked: {
-                                root.openInVSCode(modelData)
-                                root.expanded = false
-                            }
+                        // Detecta si existe docker-compose en el proyecto
+                        FolderListModel {
+                            id: dockerFiles
+                            folder: "file://" + projectPath
+                            showFiles: true
+                            showDirs: false
+                            nameFilters: ["docker-compose.yml", "docker-compose.yaml", "compose.yml", "compose.yaml"]
                         }
 
-                        PlasmaComponents.ToolButton {
-                            Layout.preferredWidth: Kirigami.Units.gridUnit * 1.5
-                            Layout.preferredHeight: Kirigami.Units.gridUnit * 1.5
-                            Layout.alignment: Qt.AlignVCenter
-                            icon.name: "list-remove"
-                            flat: true
-                            onClicked: root.removeProject(index)
+                        RowLayout {
+                            width: parent.width
+                            spacing: 0
+
+                            PlasmaComponents.ItemDelegate {
+                                Layout.fillWidth: true
+                                icon.name: "code"
+                                text: root.projectName(projectPath)
+                                onClicked: {
+                                    root.openInVSCode(projectPath)
+                                    root.expanded = false
+                                }
+                            }
+
+                            PlasmaComponents.ToolButton {
+                                visible: dockerFiles.count > 0
+                                width: visible ? implicitWidth : 0
+                                Layout.preferredWidth: Kirigami.Units.gridUnit * 1.5
+                                Layout.preferredHeight: Kirigami.Units.gridUnit * 1.5
+                                Layout.alignment: Qt.AlignVCenter
+                                icon.name: "media-playback-start"
+                                flat: true
+                                onClicked: root.dockerCmd(projectPath, "up -d")
+                            }
+
+                            PlasmaComponents.ToolButton {
+                                visible: dockerFiles.count > 0
+                                width: visible ? implicitWidth : 0
+                                Layout.preferredWidth: Kirigami.Units.gridUnit * 1.5
+                                Layout.preferredHeight: Kirigami.Units.gridUnit * 1.5
+                                Layout.alignment: Qt.AlignVCenter
+                                icon.name: "media-playback-stop"
+                                flat: true
+                                onClicked: root.dockerCmd(projectPath, "down")
+                            }
+
+                            PlasmaComponents.ToolButton {
+                                Layout.preferredWidth: Kirigami.Units.gridUnit * 1.5
+                                Layout.preferredHeight: Kirigami.Units.gridUnit * 1.5
+                                Layout.alignment: Qt.AlignVCenter
+                                icon.name: "list-remove"
+                                flat: true
+                                onClicked: root.removeProject(projectIndex)
+                            }
                         }
                     }
                 }

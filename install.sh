@@ -8,6 +8,11 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 echo "Installing Code Projects widget..."
 
+if ! pacman -Qi plasma5support &>/dev/null; then
+    echo "Installing plasma5support (required for Docker Compose buttons)..."
+    sudo pacman -S --needed --noconfirm plasma5support
+fi
+
 if [ "$SCRIPT_DIR" = "$INSTALL_DIR" ]; then
     echo "Already running from install location, skipping copy."
 else

@@ -12,23 +12,25 @@ A KDE Plasma 6 panel widget to quickly open your VS Code projects.
 - Click a project name or icon to open it in VS Code
 - Remove projects from the list with the **−** button
 - Project list persists across reboots (stored in Plasma configuration)
+- If a project contains `docker-compose.yml` / `docker-compose.yaml` / `compose.yml` / `compose.yaml`, two extra buttons appear automatically: **▶ up** and **■ down**
 - Lives in your panel — one click away at all times
 
 ## Preview
 
 ```
-┌─────────────────────────────┐
-│ ⟨/⟩  Proyectos          [+] │
-├─────────────────────────────┤
-│ [code] my-app           [−] │
-│ [code] api-service      [−] │
-│ [code] dotfiles         [−] │
-└─────────────────────────────┘
+┌──────────────────────────────────┐
+│ ⟨/⟩  Proyectos               [+] │
+├──────────────────────────────────┤
+│ [code] my-app             [▶][■][−] │  ← docker-compose detected
+│ [code] api-service        [▶][■][−] │  ← docker-compose detected
+│ [code] dotfiles                [−] │
+└──────────────────────────────────┘
 ```
 
 ## Requirements
 
 - KDE Plasma 6
+- `plasma5support` — for Docker Compose buttons (`sudo pacman -S plasma5support`)
 - VS Code installed and registered as URI handler for `vscode://`
 
 ## Installation
