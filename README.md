@@ -14,20 +14,22 @@ A KDE Plasma 6 panel widget to quickly open your VS Code projects.
 - Project list persists across reboots (stored in Plasma configuration)
 - Tooltips in Spanish on all icon buttons
 - **Docker Compose support** — if a project contains a compose file (`docker-compose*.yml/yaml`, `compose*.yml/yaml`):
-  - **▶ green** — runs `docker compose up -d` when services are stopped
-  - **■ red** — runs `docker compose down` when services are running
+  - **▶ green** — runs `docker compose up -d`; service tree expands immediately showing live startup status
+  - **■ red** — runs `docker compose down`; available during startup to cancel
   - **↓ expand** — reveals the service tree while Docker is up
   - **↓ pull** — runs `docker compose pull` to update images (opens Konsole)
   - **📄 file selector** — when multiple compose files exist, opens a menu to pick which one to use; tooltip shows the active file
-  - Spinner while a command is in progress
+  - Spinner while `docker compose down` is in progress
+- **Live startup status** — while services are coming up, the tree shows each one with a pulsing yellow dot; transitions to green (running) or red (exited/dead) as each settles; polls every 1s during startup, every 3s otherwise; 60s safety timeout
 - **Service tree** (expanded per project when Docker is running):
-  - Status dot per service — green (running) / red (exited)
+  - Status dot per service — yellow pulsing (starting) / green (running) / red (exited)
   - Mapped ports shown inline
   - **Ver logs** — `docker compose logs -f <service>` in Konsole
   - **Reiniciar** — `docker compose restart <service>`
   - **Construir imagen** — `docker compose build <service>` in Konsole
   - **Abrir terminal** — `docker compose exec <service> sh` in Konsole (running only)
   - **Abrir en navegador** — opens `http://localhost:<port>` (if ports are exposed)
+  - Action buttons hidden per service until it finishes starting
 
 ## Preview
 
@@ -35,11 +37,15 @@ A KDE Plasma 6 panel widget to quickly open your VS Code projects.
 ┌────────────────────────────────────────────────┐
 │ ⟨/⟩  Proyectos                             [+] │
 ├────────────────────────────────────────────────┤
-│ [code] my-app         [▾][■][↓][📄][−]        │  ← compose running, multiple files
-│   ● api        8080   [⌨][↺][⚙][>][🌐]       │
-│   ● db                [⌨][↺][⚙]              │  ← no ports exposed
+│ [code] my-app         [▾][■][↓][📄][−]        │  ← running, multiple compose files
+│   ● api        8080   [≡][↺][⚙][sh][🌐]      │
+│   ● db                [≡][↺][⚙]              │  ← no ports exposed
 ├────────────────────────────────────────────────┤
-│ [code] api-service    [▶][↓][−]               │  ← compose stopped, single file
+│ [code] staging        [▾][■][📄][−]           │  ← starting up
+│   ◌ api               ...                     │  ← pulsing yellow, no actions yet
+│   ◌ db                ...                     │
+├────────────────────────────────────────────────┤
+│ [code] api-service    [▶][↓][−]               │  ← stopped, single compose file
 │ [code] dotfiles       [−]                     │  ← no compose file
 └────────────────────────────────────────────────┘
 ```
