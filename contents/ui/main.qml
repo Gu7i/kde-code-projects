@@ -538,7 +538,7 @@ PlasmoidItem {
                                     PlasmaComponents.ToolButton {
                                         Layout.preferredWidth: Kirigami.Units.gridUnit * 1.4
                                         Layout.preferredHeight: Kirigami.Units.gridUnit * 1.4
-                                        icon.name: "dialog-terminal"
+                                        icon.name: "application-x-shellscript"
                                         flat: true
                                         visible: !statusDot.isPending && modelData.state === "running"
                                         onClicked: executable.exec("konsole --workdir '" + projectPath + "' -e sh -c \"" + projectItem.dockerComposeBase() + " exec " + modelData.service + " sh\"")
