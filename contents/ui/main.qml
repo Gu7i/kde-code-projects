@@ -430,6 +430,7 @@ PlasmoidItem {
                                         projectItem.checkStatus()
                                 } else {
                                     editorMenu.close()
+                                    composeMenu.close()
                                     fullRep.draggedIndex    = -1
                                     fullRep.dropTargetIndex = -1
                                 }
@@ -623,9 +624,7 @@ PlasmoidItem {
                                 flat: true
                                 onClicked: composeMenu.popup()
                                 PlasmaComponents.ToolTip {
-                                    text: projectItem.composeFileNames.length > 0
-                                        ? projectItem.composeFileNames[projectItem.selectedComposeIndex]
-                                        : "Seleccionar compose"
+                                    text: "Seleccionar Docker Compose"
                                 }
                                 PlasmaComponents.Menu {
                                     id: composeMenu
