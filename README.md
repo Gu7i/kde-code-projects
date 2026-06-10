@@ -12,6 +12,8 @@ A KDE Plasma 6 panel widget to quickly open your code projects in any editor.
 - Click a project name to open it in the **configured editor** for that project
 - **Per-project editor selector** — each project has an independent editor choice; the project icon reflects the active editor
 - **Editor management** — configure the global editor list from the widget settings (right-click → Configure); add, edit, or delete editors with name, command, and icon (native KDE icon picker with search)
+- **Search/filter** — toggle with the search button in the header; filters by project name, clears on Escape
+- **Drag to reorder** — enable with the move button in the header; grab the dot handle on the left and drag to a new position; highlight line shows the drop target
 - Remove projects from the list with the **−** button
 - Project list and editor selections persist across reboots (stored in Plasma configuration)
 - Tooltips in Spanish on all icon buttons
@@ -39,14 +41,15 @@ A KDE Plasma 6 panel widget to quickly open your code projects in any editor.
 ┌────────────────────────────────────────────────┐
 │ ⟨/⟩  Proyectos                             [+] │
 ├────────────────────────────────────────────────┤
-│ [code] my-app    [▾][■][↓][📄][✎editor][−]   │  ← VS Code, running, multiple compose
-│   ● api    8080  [≡][↺][⚙][sh][🌐]           │
-│   ● db           [≡][↺][⚙]                   │  ← no ports exposed
+│ ⟨/⟩  Proyectos             [🔍][⇅][+]         │  ← search / reorder toggles
 ├────────────────────────────────────────────────┤
-│ [kate] staging   [▾][■][📄][✎editor][−]       │  ← Kate selected for this project
+│ [⋮] [code] my-app  [▾][■][↓][📄][✎][−]       │  ← drag handle visible in reorder mode
+│        ● api  8080 [≡][↺][⚙][sh][🌐]         │
+│        ● db        [≡][↺][⚙]                 │
 ├────────────────────────────────────────────────┤
-│ [code] api-service    [▶][↓][✎editor][−]      │  ← stopped
-│ [term] dotfiles       [✎editor][−]            │  ← Vim selected, no compose
+│ [kate] staging      [▾][■][📄][✎][−]          │  ← Kate selected for this project
+│ [code] api-service  [▶][↓][✎][−]              │
+│ [term] dotfiles     [✎][−]                    │  ← Vim, no compose
 └────────────────────────────────────────────────┘
 ```
 

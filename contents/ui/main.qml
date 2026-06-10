@@ -62,6 +62,18 @@ PlasmoidItem {
         Plasmoid.configuration.projectEditors = editors
     }
 
+    function moveProject(from, to) {
+        if (from === to) return
+        var projects = Plasmoid.configuration.projects.slice()
+        var editors  = Plasmoid.configuration.projectEditors.slice()
+        var p = projects.splice(from, 1)[0]
+        var e = editors.splice(from, 1)[0]
+        projects.splice(to, 0, p)
+        editors.splice(to, 0, e)
+        Plasmoid.configuration.projects      = projects
+        Plasmoid.configuration.projectEditors = editors
+    }
+
     function extractFirstPort(portsStr) {
         if (!portsStr || portsStr.length === 0) return ""
         var seen = {}
@@ -92,47 +104,109 @@ PlasmoidItem {
             width: Math.min(parent.width, parent.height) * 0.85
             height: width
             opacity: compactRoot.containsMouse ? 0.7 : 1.0
-            Behavior on opacity {
-                NumberAnimation { duration: 100 }
-            }
+            Behavior on opacity { NumberAnimation { duration: 100 } }
         }
     }
 
     fullRepresentation: ColumnLayout {
+        id: fullRep
         spacing: 0
 
-        Layout.minimumWidth: Kirigami.Units.gridUnit * 22
+        Layout.minimumWidth:   Kirigami.Units.gridUnit * 22
         Layout.preferredWidth: Kirigami.Units.gridUnit * 26
-        Layout.minimumHeight: Kirigami.Units.gridUnit * 10
+        Layout.minimumHeight:  Kirigami.Units.gridUnit * 10
         Layout.preferredHeight: Kirigami.Units.gridUnit * 28
 
+        property string searchText: ""
+        property bool   searchVisible: false
+        property bool   dragEnabled:     false
+        property int    draggedIndex:    -1
+        property int    dropTargetIndex: -1
+
+        onDragEnabledChanged: {
+            if (!dragEnabled) { draggedIndex = -1; dropTargetIndex = -1 }
+        }
+
+        property var filteredProjects: {
+            var q        = searchText.toLowerCase()
+            var projects = Plasmoid.configuration.projects
+            var result   = []
+            for (var i = 0; i < projects.length; i++) {
+                var name = root.projectName(projects[i]).toLowerCase()
+                if (q === "" || name.indexOf(q) >= 0)
+                    result.push({ path: projects[i], origIndex: i })
+            }
+            return result
+        }
+
+        // ── Header ──────────────────────────────────────────────────────────
         PlasmaExtras.PlasmoidHeading {
             Layout.fillWidth: true
 
-            RowLayout {
+            ColumnLayout {
                 anchors.fill: parent
+                spacing: 0
 
-                Kirigami.Icon {
-                    source: "code-context"
-                    Layout.preferredWidth: Kirigami.Units.iconSizes.small
-                    Layout.preferredHeight: Kirigami.Units.iconSizes.small
-                }
-
-                PlasmaExtras.Heading {
-                    text: "Proyectos"
-                    level: 3
+                RowLayout {
                     Layout.fillWidth: true
+
+                    Kirigami.Icon {
+                        source: "code-context"
+                        Layout.preferredWidth:  Kirigami.Units.iconSizes.small
+                        Layout.preferredHeight: Kirigami.Units.iconSizes.small
+                    }
+
+                    PlasmaExtras.Heading {
+                        text: "Proyectos"
+                        level: 3
+                        Layout.fillWidth: true
+                    }
+
+                    PlasmaComponents.ToolButton {
+                        icon.name: "search"
+                        flat: true
+                        checkable: true
+                        checked: fullRep.searchVisible
+                        onClicked: {
+                            fullRep.searchVisible = !fullRep.searchVisible
+                            if (!fullRep.searchVisible) fullRep.searchText = ""
+                            else searchField.forceActiveFocus()
+                        }
+                        PlasmaComponents.ToolTip { text: "Buscar proyecto" }
+                    }
+
+                    PlasmaComponents.ToolButton {
+                        icon.name: "transform-move"
+                        flat: true
+                        checkable: true
+                        checked: fullRep.dragEnabled
+                        onClicked: fullRep.dragEnabled = !fullRep.dragEnabled
+                        PlasmaComponents.ToolTip { text: "Reordenar proyectos" }
+                    }
+
+                    PlasmaComponents.ToolButton {
+                        icon.name: "list-add"
+                        flat: true
+                        onClicked: folderDialog.open()
+                        PlasmaComponents.ToolTip { text: "Añadir proyecto" }
+                    }
                 }
 
-                PlasmaComponents.ToolButton {
-                    icon.name: "list-add"
-                    flat: true
-                    onClicked: folderDialog.open()
-                    PlasmaComponents.ToolTip { text: "Añadir proyecto" }
+                PlasmaComponents.TextField {
+                    id: searchField
+                    visible: fullRep.searchVisible
+                    Layout.fillWidth: true
+                    placeholderText: "Buscar proyecto..."
+                    onTextChanged: fullRep.searchText = text
+                    Keys.onEscapePressed: {
+                        fullRep.searchVisible = false
+                        fullRep.searchText    = ""
+                    }
                 }
             }
         }
 
+        // ── Empty states ────────────────────────────────────────────────────
         Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
@@ -147,44 +221,61 @@ PlasmoidItem {
             }
         }
 
+        Item {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            visible: Plasmoid.configuration.projects.length > 0 && fullRep.filteredProjects.length === 0
+
+            PlasmaComponents.Label {
+                anchors.centerIn: parent
+                text: "Sin resultados."
+                opacity: 0.5
+            }
+        }
+
+        // ── Project list ─────────────────────────────────────────────────────
         PlasmaComponents.ScrollView {
             id: projectsScrollView
             Layout.fillWidth: true
             Layout.fillHeight: true
             clip: true
-            visible: Plasmoid.configuration.projects.length > 0
+            visible: fullRep.filteredProjects.length > 0
 
             Column {
+                id: projectsColumn
                 width: projectsScrollView.availableWidth
 
                 Repeater {
-                    model: Plasmoid.configuration.projects
+                    id: projectsRepeater
+                    model: fullRep.filteredProjects
 
                     delegate: Column {
                         id: projectItem
                         width: parent ? parent.width : 0
 
-                        property string projectPath: modelData
-                        property int projectIndex: index
-                        property bool isRunning: false
-                        property bool isLoading: false   // true only during docker down
-                        property bool isStarting: false  // true while compose up is starting
-                        property bool isExpanded: false
-                        property var containerList: []
+                        property string projectPath: modelData.path
+                        property int    origIndex:   modelData.origIndex
 
-                        property var composeFilePaths: []
-                        property var composeFileNames: []
+                        property bool isRunning:  false
+                        property bool isLoading:  false
+                        property bool isStarting: false
+                        property bool isExpanded: false
+                        property var  containerList: []
+
+                        property var composeFilePaths:     []
+                        property var composeFileNames:     []
                         property int selectedComposeIndex: 0
 
                         property string currentEditor: {
                             var editors = Plasmoid.configuration.projectEditors
-                            return (editors && editors.length > projectIndex) ? editors[projectIndex] : "code --new-window"
+                            return (editors && editors.length > origIndex) ? editors[origIndex] : "code --new-window"
                         }
 
+                        // ── Helpers ──────────────────────────────────────────
                         function setEditor(cmd) {
                             var editors = Plasmoid.configuration.projectEditors.slice()
-                            while (editors.length <= projectIndex) editors.push("code --new-window")
-                            editors[projectIndex] = cmd
+                            while (editors.length <= origIndex) editors.push("code --new-window")
+                            editors[origIndex] = cmd
                             Plasmoid.configuration.projectEditors = editors
                         }
 
@@ -194,6 +285,7 @@ PlasmoidItem {
                             return "docker compose --project-directory '" + projectPath + "'"
                         }
 
+                        // ── Data sources ─────────────────────────────────────
                         FolderListModel {
                             id: dockerFiles
                             folder: "file://" + projectPath
@@ -202,14 +294,13 @@ PlasmoidItem {
                             nameFilters: ["docker-compose*.yml", "docker-compose*.yaml", "compose*.yml", "compose*.yaml"]
                             onCountChanged: {
                                 if (count === 0) return
-                                var names = []
-                                var paths = []
+                                var names = [], paths = []
                                 for (var i = 0; i < count; i++) {
                                     names.push(dockerFiles.get(i, "fileName"))
                                     paths.push(dockerFiles.get(i, "filePath"))
                                 }
-                                projectItem.composeFileNames = names
-                                projectItem.composeFilePaths = paths
+                                projectItem.composeFileNames     = names
+                                projectItem.composeFilePaths     = paths
                                 projectItem.selectedComposeIndex = 0
                                 projectItem.checkStatus()
                             }
@@ -252,8 +343,8 @@ PlasmoidItem {
                                     if (parts.length >= 2) {
                                         containers.push({
                                             service: parts[0].trim(),
-                                            state: parts[1].trim(),
-                                            ports: parts.length > 2 ? parts[2].trim() : ""
+                                            state:   parts[1].trim(),
+                                            ports:   parts.length > 2 ? parts[2].trim() : ""
                                         })
                                     }
                                 }
@@ -267,25 +358,21 @@ PlasmoidItem {
                                     if (allSettled) {
                                         projectItem.isStarting = false
                                         startupTimeoutTimer.stop()
-                                        projectItem.isRunning = containers.some(function(c) {
-                                            return c.state === "running"
-                                        })
+                                        projectItem.isRunning = containers.some(function(c) { return c.state === "running" })
                                     }
                                 }
                             }
                         }
 
                         function checkStatus() {
-                            var cmd = dockerComposeBase() + " ps --status running -q 2>/dev/null"
-                            statusSource.connectSource(cmd)
+                            statusSource.connectSource(dockerComposeBase() + " ps --status running -q 2>/dev/null")
                         }
 
                         function fetchContainers() {
-                            var cmd = dockerComposeBase() + " ps --format '{{.Service}}|{{.State}}|{{.Ports}}' 2>/dev/null"
-                            containersSource.connectSource(cmd)
+                            containersSource.connectSource(dockerComposeBase() + " ps --format '{{.Service}}|{{.State}}|{{.Ports}}' 2>/dev/null")
                         }
 
-                        // Normal refresh poll (pauses during startup or when panel is closed)
+                        // ── Timers ────────────────────────────────────────────
                         Timer {
                             id: refreshTimer
                             interval: 3000
@@ -297,7 +384,6 @@ PlasmoidItem {
                             }
                         }
 
-                        // Fast poll during compose up (auto-runs while isStarting)
                         Timer {
                             id: startupPollTimer
                             interval: 1000
@@ -306,31 +392,113 @@ PlasmoidItem {
                             onTriggered: projectItem.fetchContainers()
                         }
 
-                        // Safety timeout: give up waiting after 60s
                         Timer {
                             id: startupTimeoutTimer
                             interval: 60000
                             repeat: false
                             onTriggered: {
                                 projectItem.isStarting = false
-                                projectItem.isRunning = projectItem.containerList.some(function(c) {
-                                    return c.state === "running"
-                                })
+                                projectItem.isRunning  = projectItem.containerList.some(function(c) { return c.state === "running" })
                             }
                         }
 
                         Connections {
                             target: root
                             function onExpandedChanged() {
-                                if (root.expanded && dockerFiles.count > 0 && !projectItem.isStarting)
-                                    projectItem.checkStatus()
+                                if (root.expanded) {
+                                    if (dockerFiles.count > 0 && !projectItem.isStarting)
+                                        projectItem.checkStatus()
+                                } else {
+                                    editorMenu.close()
+                                    fullRep.draggedIndex    = -1
+                                    fullRep.dropTargetIndex = -1
+                                }
                             }
                         }
 
-                        // Project row
+                        // ── Drop indicator (top) ──────────────────────────────
+                        Rectangle {
+                            visible: fullRep.dragEnabled &&
+                                     fullRep.draggedIndex !== -1 &&
+                                     fullRep.dropTargetIndex === origIndex &&
+                                     fullRep.draggedIndex !== origIndex
+                            width: parent.width
+                            height: 2
+                            color: Kirigami.Theme.highlightColor
+                            z: 1
+                        }
+
+                        // ── Project row ───────────────────────────────────────
                         RowLayout {
                             width: parent.width
                             spacing: 0
+                            opacity: fullRep.draggedIndex === origIndex ? 0.3 : 1.0
+                            Behavior on opacity { NumberAnimation { duration: 100 } }
+
+                            // Drag handle
+                            Item {
+                                visible: fullRep.dragEnabled && fullRep.searchText === ""
+                                Layout.preferredWidth:  Kirigami.Units.gridUnit * 1.5
+                                Layout.preferredHeight: Kirigami.Units.gridUnit * 2
+                                Layout.alignment: Qt.AlignVCenter
+
+                                Column {
+                                    anchors.centerIn: parent
+                                    spacing: 3
+                                    opacity: dragHandleArea.containsMouse ? 0.7 : 0.3
+                                    Repeater {
+                                        model: 3
+                                        Rectangle {
+                                            width: 4; height: 4; radius: 2
+                                            color: Kirigami.Theme.textColor
+                                        }
+                                    }
+                                }
+
+                                MouseArea {
+                                    id: dragHandleArea
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    preventStealing: true
+                                    cursorShape: pressed ? Qt.ClosedHandCursor : Qt.OpenHandCursor
+                                    acceptedButtons: Qt.LeftButton
+
+                                    onPressed: (mouse) => {
+                                        fullRep.draggedIndex    = origIndex
+                                        fullRep.dropTargetIndex = origIndex
+                                    }
+
+                                    onPositionChanged: (mouse) => {
+                                        if (!pressed) return
+                                        var globalY = dragHandleArea.mapToGlobal(mouse.x, mouse.y).y
+                                        var count   = projectsRepeater.count
+                                        var newTarget = count  // sentinel = drop at end
+                                        for (var i = 0; i < count; i++) {
+                                            var item = projectsRepeater.itemAt(i)
+                                            if (!item) continue
+                                            var mid = item.mapToGlobal(0, 0).y + item.height / 2
+                                            if (globalY < mid) {
+                                                newTarget = item.origIndex
+                                                break
+                                            }
+                                        }
+                                        fullRep.dropTargetIndex = newTarget
+                                    }
+
+                                    onReleased: {
+                                        var from = fullRep.draggedIndex
+                                        var drop = fullRep.dropTargetIndex
+                                        var n    = Plasmoid.configuration.projects.length
+                                        if (from !== -1 && drop !== -1 && from !== drop) {
+                                            var to = (from < drop) ? drop - 1 : drop
+                                            to = Math.max(0, Math.min(to, n - 1))
+                                            root.moveProject(from, to)
+                                        }
+                                        fullRep.draggedIndex    = -1
+                                        fullRep.dropTargetIndex = -1
+                                    }
+                                }
+                            }
 
                             PlasmaComponents.ItemDelegate {
                                 Layout.fillWidth: true
@@ -348,7 +516,7 @@ PlasmoidItem {
                             // Expand/collapse tree
                             PlasmaComponents.ToolButton {
                                 visible: dockerFiles.count > 0 && projectItem.isRunning && !projectItem.isLoading
-                                Layout.preferredWidth: Kirigami.Units.gridUnit * 1.5
+                                Layout.preferredWidth:  Kirigami.Units.gridUnit * 1.5
                                 Layout.preferredHeight: Kirigami.Units.gridUnit * 1.5
                                 Layout.alignment: Qt.AlignVCenter
                                 icon.name: projectItem.isExpanded ? "arrow-up" : "arrow-down"
@@ -363,7 +531,7 @@ PlasmoidItem {
                             // Docker up/stop/spinner
                             Item {
                                 visible: dockerFiles.count > 0
-                                Layout.preferredWidth: Kirigami.Units.gridUnit * 1.5
+                                Layout.preferredWidth:  Kirigami.Units.gridUnit * 1.5
                                 Layout.preferredHeight: Kirigami.Units.gridUnit * 1.5
                                 Layout.alignment: Qt.AlignVCenter
 
@@ -383,7 +551,7 @@ PlasmoidItem {
                                     flat: true
                                     Behavior on opacity { NumberAnimation { duration: 150 } }
                                     onClicked: {
-                                        projectItem.isRunning = true
+                                        projectItem.isRunning  = true
                                         projectItem.isStarting = true
                                         projectItem.isExpanded = true
                                         executable.exec("sh -c \"" + projectItem.dockerComposeBase() + " up -d\"")
@@ -403,7 +571,7 @@ PlasmoidItem {
                                     Behavior on opacity { NumberAnimation { duration: 150 } }
                                     onClicked: {
                                         projectItem.isStarting = false
-                                        projectItem.isLoading = true
+                                        projectItem.isLoading  = true
                                         projectItem.isExpanded = false
                                         startupTimeoutTimer.stop()
                                         downSource.connectSource("sh -c \"" + projectItem.dockerComposeBase() + " down\"")
@@ -415,7 +583,7 @@ PlasmoidItem {
                             // Pull images
                             PlasmaComponents.ToolButton {
                                 visible: dockerFiles.count > 0 && !projectItem.isLoading && !projectItem.isStarting
-                                Layout.preferredWidth: Kirigami.Units.gridUnit * 1.5
+                                Layout.preferredWidth:  Kirigami.Units.gridUnit * 1.5
                                 Layout.preferredHeight: Kirigami.Units.gridUnit * 1.5
                                 Layout.alignment: Qt.AlignVCenter
                                 icon.name: "edit-download"
@@ -428,7 +596,7 @@ PlasmoidItem {
                             PlasmaComponents.ToolButton {
                                 id: composeBtn
                                 visible: dockerFiles.count > 1 && !projectItem.isLoading && !projectItem.isStarting
-                                Layout.preferredWidth: Kirigami.Units.gridUnit * 1.5
+                                Layout.preferredWidth:  Kirigami.Units.gridUnit * 1.5
                                 Layout.preferredHeight: Kirigami.Units.gridUnit * 1.5
                                 Layout.alignment: Qt.AlignVCenter
                                 icon.name: "document-open"
@@ -439,7 +607,6 @@ PlasmoidItem {
                                         ? projectItem.composeFileNames[projectItem.selectedComposeIndex]
                                         : "Seleccionar compose"
                                 }
-
                                 PlasmaComponents.Menu {
                                     id: composeMenu
                                     Repeater {
@@ -452,7 +619,7 @@ PlasmoidItem {
                                                 if (projectItem.selectedComposeIndex !== index) {
                                                     projectItem.selectedComposeIndex = index
                                                     projectItem.isExpanded = false
-                                                    projectItem.isRunning = false
+                                                    projectItem.isRunning  = false
                                                     projectItem.checkStatus()
                                                 }
                                             }
@@ -464,7 +631,7 @@ PlasmoidItem {
                             // Editor selector
                             PlasmaComponents.ToolButton {
                                 id: editorBtn
-                                Layout.preferredWidth: Kirigami.Units.gridUnit * 1.5
+                                Layout.preferredWidth:  Kirigami.Units.gridUnit * 1.5
                                 Layout.preferredHeight: Kirigami.Units.gridUnit * 1.5
                                 Layout.alignment: Qt.AlignVCenter
                                 flat: true
@@ -476,7 +643,6 @@ PlasmoidItem {
                                         return "Editor: " + (opt ? opt.name : projectItem.currentEditor)
                                     }
                                 }
-
                                 PlasmaComponents.Menu {
                                     id: editorMenu
                                     Repeater {
@@ -493,22 +659,21 @@ PlasmoidItem {
 
                             // Remove project
                             PlasmaComponents.ToolButton {
-                                Layout.preferredWidth: Kirigami.Units.gridUnit * 1.5
+                                Layout.preferredWidth:  Kirigami.Units.gridUnit * 1.5
                                 Layout.preferredHeight: Kirigami.Units.gridUnit * 1.5
                                 Layout.alignment: Qt.AlignVCenter
                                 icon.name: "list-remove"
                                 flat: true
-                                onClicked: root.removeProject(projectIndex)
+                                onClicked: root.removeProject(origIndex)
                                 PlasmaComponents.ToolTip { text: "Eliminar proyecto" }
                             }
                         }
 
-                        // Container tree
+                        // ── Container tree ────────────────────────────────────
                         Column {
                             visible: projectItem.isExpanded && (projectItem.isRunning || projectItem.isStarting)
                             width: parent.width
 
-                            // Placeholder while starting and no containers fetched yet
                             PlasmaComponents.Label {
                                 visible: projectItem.isStarting && projectItem.containerList.length === 0
                                 width: parent.width
@@ -529,17 +694,12 @@ PlasmoidItem {
 
                                     Item { Layout.preferredWidth: Kirigami.Units.gridUnit * 1.2 }
 
-                                    // Status dot: pulsing while starting, solid when settled
                                     Rectangle {
                                         id: statusDot
-                                        width: 7
-                                        height: 7
-                                        radius: 4
+                                        width: 7; height: 7; radius: 4
                                         Layout.alignment: Qt.AlignVCenter
 
-                                        property bool isSettled: modelData.state === "running" ||
-                                                                  modelData.state === "exited"  ||
-                                                                  modelData.state === "dead"
+                                        property bool isSettled: modelData.state === "running" || modelData.state === "exited" || modelData.state === "dead"
                                         property bool isPending: projectItem.isStarting && !isSettled
 
                                         color: isPending
@@ -577,7 +737,7 @@ PlasmoidItem {
                                     }
 
                                     PlasmaComponents.ToolButton {
-                                        Layout.preferredWidth: Kirigami.Units.gridUnit * 1.4
+                                        Layout.preferredWidth:  Kirigami.Units.gridUnit * 1.4
                                         Layout.preferredHeight: Kirigami.Units.gridUnit * 1.4
                                         icon.name: "utilities-terminal"
                                         flat: true
@@ -587,7 +747,7 @@ PlasmoidItem {
                                     }
 
                                     PlasmaComponents.ToolButton {
-                                        Layout.preferredWidth: Kirigami.Units.gridUnit * 1.4
+                                        Layout.preferredWidth:  Kirigami.Units.gridUnit * 1.4
                                         Layout.preferredHeight: Kirigami.Units.gridUnit * 1.4
                                         icon.name: "system-reboot"
                                         flat: true
@@ -600,7 +760,7 @@ PlasmoidItem {
                                     }
 
                                     PlasmaComponents.ToolButton {
-                                        Layout.preferredWidth: Kirigami.Units.gridUnit * 1.4
+                                        Layout.preferredWidth:  Kirigami.Units.gridUnit * 1.4
                                         Layout.preferredHeight: Kirigami.Units.gridUnit * 1.4
                                         icon.name: "run-build"
                                         flat: true
@@ -610,7 +770,7 @@ PlasmoidItem {
                                     }
 
                                     PlasmaComponents.ToolButton {
-                                        Layout.preferredWidth: Kirigami.Units.gridUnit * 1.4
+                                        Layout.preferredWidth:  Kirigami.Units.gridUnit * 1.4
                                         Layout.preferredHeight: Kirigami.Units.gridUnit * 1.4
                                         icon.name: "application-x-shellscript"
                                         flat: true
@@ -620,14 +780,13 @@ PlasmoidItem {
                                     }
 
                                     PlasmaComponents.ToolButton {
-                                        Layout.preferredWidth: Kirigami.Units.gridUnit * 1.4
+                                        Layout.preferredWidth:  Kirigami.Units.gridUnit * 1.4
                                         Layout.preferredHeight: Kirigami.Units.gridUnit * 1.4
                                         icon.name: "internet-web-browser"
                                         flat: true
                                         visible: !statusDot.isPending && modelData.state === "running" && modelData.ports.length > 0
                                         onClicked: {
-                                            var re = /:(\d+)->/
-                                            var m = re.exec(modelData.ports)
+                                            var m = /:(\d+)->/.exec(modelData.ports)
                                             if (m) Qt.openUrlExternally("http://localhost:" + m[1])
                                         }
                                         PlasmaComponents.ToolTip { text: "Abrir en navegador" }
@@ -638,9 +797,17 @@ PlasmoidItem {
                             Item { width: 1; height: Kirigami.Units.smallSpacing }
                         }
 
-                        Kirigami.Separator {
+                        Kirigami.Separator { width: parent.width; opacity: 0.3 }
+
+                        // Drop indicator bottom (after last item)
+                        Rectangle {
+                            visible: fullRep.dragEnabled &&
+                                     fullRep.draggedIndex !== -1 &&
+                                     fullRep.dropTargetIndex === Plasmoid.configuration.projects.length &&
+                                     origIndex === Plasmoid.configuration.projects.length - 1
                             width: parent.width
-                            opacity: 0.3
+                            height: 2
+                            color: Kirigami.Theme.highlightColor
                         }
                     }
                 }
