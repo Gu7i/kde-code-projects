@@ -8,5 +8,11 @@
     <entry name="projects" type="StringList">
       <default></default>
     </entry>
+    <entry name="projectEditors" type="StringList">
+      <default></default>
+    </entry>
+    <entry name="editorsList" type="StringList">
+      <default>VS Code|code --new-window|code,Kate|kate|kate,Vim|konsole -e vim|utilities-terminal</default>
+    </entry>
   </group>
 </kcfg>

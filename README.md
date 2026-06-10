@@ -1,6 +1,6 @@
 # Code Projects — KDE Plasma Widget
 
-A KDE Plasma 6 panel widget to quickly open your VS Code projects.
+A KDE Plasma 6 panel widget to quickly open your code projects in any editor.
 
 ![KDE Plasma 6](https://img.shields.io/badge/KDE_Plasma-6-blue?logo=kde)
 ![QML](https://img.shields.io/badge/QML-Qt_6-green?logo=qt)
@@ -9,9 +9,11 @@ A KDE Plasma 6 panel widget to quickly open your VS Code projects.
 ## Features
 
 - Add any folder as a project with the **+** button (native KDE folder picker)
-- Click a project name to open it in a **new VS Code window** (`code --new-window`)
+- Click a project name to open it in the **configured editor** for that project
+- **Per-project editor selector** — each project has an independent editor choice; the project icon reflects the active editor
+- **Editor management** — configure the global editor list from the widget settings (right-click → Configure); add, edit, or delete editors with name, command, and icon (native KDE icon picker with search)
 - Remove projects from the list with the **−** button
-- Project list persists across reboots (stored in Plasma configuration)
+- Project list and editor selections persist across reboots (stored in Plasma configuration)
 - Tooltips in Spanish on all icon buttons
 - **Docker Compose support** — if a project contains a compose file (`docker-compose*.yml/yaml`, `compose*.yml/yaml`):
   - **▶ green** — runs `docker compose up -d`; service tree expands immediately showing live startup status
@@ -37,16 +39,14 @@ A KDE Plasma 6 panel widget to quickly open your VS Code projects.
 ┌────────────────────────────────────────────────┐
 │ ⟨/⟩  Proyectos                             [+] │
 ├────────────────────────────────────────────────┤
-│ [code] my-app         [▾][■][↓][📄][−]        │  ← running, multiple compose files
-│   ● api        8080   [≡][↺][⚙][sh][🌐]      │
-│   ● db                [≡][↺][⚙]              │  ← no ports exposed
+│ [code] my-app    [▾][■][↓][📄][✎editor][−]   │  ← VS Code, running, multiple compose
+│   ● api    8080  [≡][↺][⚙][sh][🌐]           │
+│   ● db           [≡][↺][⚙]                   │  ← no ports exposed
 ├────────────────────────────────────────────────┤
-│ [code] staging        [▾][■][📄][−]           │  ← starting up
-│   ◌ api               ...                     │  ← pulsing yellow, no actions yet
-│   ◌ db                ...                     │
+│ [kate] staging   [▾][■][📄][✎editor][−]       │  ← Kate selected for this project
 ├────────────────────────────────────────────────┤
-│ [code] api-service    [▶][↓][−]               │  ← stopped, single compose file
-│ [code] dotfiles       [−]                     │  ← no compose file
+│ [code] api-service    [▶][↓][✎editor][−]      │  ← stopped
+│ [term] dotfiles       [✎editor][−]            │  ← Vim selected, no compose
 └────────────────────────────────────────────────┘
 ```
 
@@ -56,7 +56,7 @@ A KDE Plasma 6 panel widget to quickly open your VS Code projects.
 - `plasma5support` — for Docker Compose buttons (`sudo pacman -S plasma5support`)
 - `konsole` — for logs and terminal (`sudo pacman -S konsole`)
 - `docker` with Compose v2 (`docker compose` subcommand)
-- VS Code with `code` CLI available in `$PATH`
+- At least one editor with its CLI available in `$PATH` (VS Code `code`, Kate `kate`, etc.)
 
 ## Installation
 
@@ -82,9 +82,11 @@ kde-code-projects/
 ├── metadata.json          # Plasma plugin metadata
 └── contents/
     ├── config/
-    │   └── main.xml       # Configuration schema (project list)
+    │   ├── config.qml     # Configuration pages definition
+    │   └── main.xml       # Configuration schema
     └── ui/
-        └── main.qml       # Widget UI
+        ├── main.qml       # Widget UI
+        └── configEditors.qml  # Editors management settings page
 ```
 
 ## License

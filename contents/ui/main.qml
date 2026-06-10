@@ -21,8 +21,21 @@ PlasmoidItem {
         function exec(cmd) { connectSource(cmd) }
     }
 
-    function openInVSCode(projectPath) {
-        executable.exec("code --new-window '" + projectPath + "'")
+    property var editorOptions: {
+        var list = Plasmoid.configuration.editorsList
+        if (!list || list.length === 0) return [
+            { name: "VS Code", cmd: "code --new-window", icon: "code" },
+            { name: "Kate",    cmd: "kate",               icon: "kate" },
+            { name: "Vim",     cmd: "konsole -e vim",     icon: "utilities-terminal" }
+        ]
+        return list.map(function(e) {
+            var p = e.split("|")
+            return { name: p[0] || "", cmd: p[1] || "", icon: p[2] || "document-edit" }
+        })
+    }
+
+    function openProject(projectPath, editorCmd) {
+        executable.exec((editorCmd || "code --new-window") + " '" + projectPath + "'")
     }
 
     function projectName(path) {
@@ -34,6 +47,9 @@ PlasmoidItem {
         if (list.indexOf(path) < 0) {
             list.push(path)
             Plasmoid.configuration.projects = list
+            var editors = Plasmoid.configuration.projectEditors.slice()
+            editors.push("code --new-window")
+            Plasmoid.configuration.projectEditors = editors
         }
     }
 
@@ -41,6 +57,9 @@ PlasmoidItem {
         var list = Plasmoid.configuration.projects.slice()
         list.splice(idx, 1)
         Plasmoid.configuration.projects = list
+        var editors = Plasmoid.configuration.projectEditors.slice()
+        editors.splice(idx, 1)
+        Plasmoid.configuration.projectEditors = editors
     }
 
     function extractFirstPort(portsStr) {
@@ -156,6 +175,18 @@ PlasmoidItem {
                         property var composeFilePaths: []
                         property var composeFileNames: []
                         property int selectedComposeIndex: 0
+
+                        property string currentEditor: {
+                            var editors = Plasmoid.configuration.projectEditors
+                            return (editors && editors.length > projectIndex) ? editors[projectIndex] : "code --new-window"
+                        }
+
+                        function setEditor(cmd) {
+                            var editors = Plasmoid.configuration.projectEditors.slice()
+                            while (editors.length <= projectIndex) editors.push("code --new-window")
+                            editors[projectIndex] = cmd
+                            Plasmoid.configuration.projectEditors = editors
+                        }
 
                         function dockerComposeBase() {
                             if (composeFilePaths.length > 0)
@@ -303,10 +334,13 @@ PlasmoidItem {
 
                             PlasmaComponents.ItemDelegate {
                                 Layout.fillWidth: true
-                                icon.name: "code"
+                                icon.name: {
+                                    var opt = root.editorOptions.find(e => e.cmd === projectItem.currentEditor)
+                                    return opt ? opt.icon : "code-context"
+                                }
                                 text: root.projectName(projectPath)
                                 onClicked: {
-                                    root.openInVSCode(projectPath)
+                                    root.openProject(projectPath, projectItem.currentEditor)
                                     root.expanded = false
                                 }
                             }
@@ -422,6 +456,36 @@ PlasmoidItem {
                                                     projectItem.checkStatus()
                                                 }
                                             }
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Editor selector
+                            PlasmaComponents.ToolButton {
+                                id: editorBtn
+                                Layout.preferredWidth: Kirigami.Units.gridUnit * 1.5
+                                Layout.preferredHeight: Kirigami.Units.gridUnit * 1.5
+                                Layout.alignment: Qt.AlignVCenter
+                                flat: true
+                                icon.name: "document-edit"
+                                onClicked: editorMenu.popup()
+                                PlasmaComponents.ToolTip {
+                                    text: {
+                                        var opt = root.editorOptions.find(e => e.cmd === projectItem.currentEditor)
+                                        return "Editor: " + (opt ? opt.name : projectItem.currentEditor)
+                                    }
+                                }
+
+                                PlasmaComponents.Menu {
+                                    id: editorMenu
+                                    Repeater {
+                                        model: root.editorOptions
+                                        PlasmaComponents.MenuItem {
+                                            text: modelData.name
+                                            checkable: true
+                                            checked: projectItem.currentEditor === modelData.cmd
+                                            onTriggered: projectItem.setEditor(modelData.cmd)
                                         }
                                     }
                                 }
