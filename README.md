@@ -14,7 +14,9 @@ A KDE Plasma 6 panel widget to quickly open your code projects in any editor.
 - **Editor management** — configure the global editor list from the widget settings (right-click → Configure); add, edit, or delete editors with name, command, and icon (native KDE icon picker with search)
 - **Search/filter** — toggle with the search button in the header; filters by project name, clears on Escape
 - **Drag to reorder** — enable with the move button in the header; grab the dot handle on the left and drag to a new position; highlight line shows the drop target
-- Remove projects from the list with the **−** button
+- **Editor selector** — enable with the editor button in the header; reveals the per-project editor picker on each row
+- **Delete mode** — enable with the delete button in the header; reveals the remove button on each row
+- Remove projects from the list with the **−** button (delete mode must be active)
 - Project list and editor selections persist across reboots (stored in Plasma configuration)
 - Tooltips in Spanish on all icon buttons
 - **Docker Compose support** — if a project contains a compose file (`docker-compose*.yml/yaml`, `compose*.yml/yaml`):
@@ -41,9 +43,9 @@ A KDE Plasma 6 panel widget to quickly open your code projects in any editor.
 ┌────────────────────────────────────────────────┐
 │ ⟨/⟩  Proyectos                             [+] │
 ├────────────────────────────────────────────────┤
-│ ⟨/⟩  Proyectos             [🔍][⇅][+]         │  ← search / reorder toggles
+│ ⟨/⟩  Proyectos         [🔍][✎][🗑][⇅][+]     │  ← search / editor / delete / reorder toggles
 ├────────────────────────────────────────────────┤
-│ [⋮] [code] my-app  [▾][■][↓][📄][✎][−]       │  ← drag handle visible in reorder mode
+│ [⋮] [code] my-app  [▾][■][↓][📄][✎][−]       │  ← drag handle (reorder), editor btn, delete btn
 │        ● api  8080 [≡][↺][⚙][sh][🌐]         │
 │        ● db        [≡][↺][⚙]                 │
 ├────────────────────────────────────────────────┤

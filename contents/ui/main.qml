@@ -118,8 +118,10 @@ PlasmoidItem {
         Layout.preferredHeight: Kirigami.Units.gridUnit * 28
 
         property string searchText: ""
-        property bool   searchVisible: false
-        property bool   dragEnabled:     false
+        property bool   searchVisible:          false
+        property bool   dragEnabled:            false
+        property bool   deleteEnabled:          false
+        property bool   editorSelectorEnabled:  false
         property int    draggedIndex:    -1
         property int    dropTargetIndex: -1
 
@@ -173,6 +175,24 @@ PlasmoidItem {
                             else searchField.forceActiveFocus()
                         }
                         PlasmaComponents.ToolTip { text: "Buscar proyecto" }
+                    }
+
+                    PlasmaComponents.ToolButton {
+                        icon.name: "document-edit"
+                        flat: true
+                        checkable: true
+                        checked: fullRep.editorSelectorEnabled
+                        onClicked: fullRep.editorSelectorEnabled = !fullRep.editorSelectorEnabled
+                        PlasmaComponents.ToolTip { text: "Seleccionar editor" }
+                    }
+
+                    PlasmaComponents.ToolButton {
+                        icon.name: "edit-delete"
+                        flat: true
+                        checkable: true
+                        checked: fullRep.deleteEnabled
+                        onClicked: fullRep.deleteEnabled = !fullRep.deleteEnabled
+                        PlasmaComponents.ToolTip { text: "Eliminar proyectos" }
                     }
 
                     PlasmaComponents.ToolButton {
@@ -631,6 +651,7 @@ PlasmoidItem {
                             // Editor selector
                             PlasmaComponents.ToolButton {
                                 id: editorBtn
+                                visible: fullRep.editorSelectorEnabled
                                 Layout.preferredWidth:  Kirigami.Units.gridUnit * 1.5
                                 Layout.preferredHeight: Kirigami.Units.gridUnit * 1.5
                                 Layout.alignment: Qt.AlignVCenter
@@ -659,10 +680,12 @@ PlasmoidItem {
 
                             // Remove project
                             PlasmaComponents.ToolButton {
+                                visible: fullRep.deleteEnabled
                                 Layout.preferredWidth:  Kirigami.Units.gridUnit * 1.5
                                 Layout.preferredHeight: Kirigami.Units.gridUnit * 1.5
                                 Layout.alignment: Qt.AlignVCenter
                                 icon.name: "list-remove"
+                                icon.color: Kirigami.Theme.negativeTextColor
                                 flat: true
                                 onClicked: root.removeProject(origIndex)
                                 PlasmaComponents.ToolTip { text: "Eliminar proyecto" }
