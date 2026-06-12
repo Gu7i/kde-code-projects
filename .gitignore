@@ -1,0 +1,12 @@
+# KDE / Qt build artifacts
+*.pyc
+*.pyo
+__pycache__/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
