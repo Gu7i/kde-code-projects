@@ -151,6 +151,25 @@ PlasmoidItem {
             return result
         }
 
+        // Shared running-state map: origIndex → bool. Each project card writes here.
+        property var projectRunningStates: ({})
+
+        function setProjectRunning(idx, val) {
+            var s = Object.assign({}, projectRunningStates)  // new object → QML detects change
+            s[idx] = val
+            projectRunningStates = s
+        }
+
+        property int runningCount: {
+            var n = 0
+            var keys = Object.keys(projectRunningStates)
+            for (var i = 0; i < keys.length; i++) if (projectRunningStates[keys[i]]) n++
+            return n
+        }
+        property int offlineCount: {
+            return Math.max(0, Plasmoid.configuration.projects.length - runningCount)
+        }
+
         ColumnLayout {
             anchors.fill: parent
             spacing: 0
@@ -246,7 +265,7 @@ PlasmoidItem {
                             width: 40; height: 16; color: root.clrGreen
                             Text {
                                 anchors.centerIn: parent
-                                text: runningCountLabel
+                                text: fullRep.runningCount.toString().padStart(2, "0")
                                 font.family: root.mono; font.pixelSize: 10; font.bold: true; color: "#000"
                             }
                         }
@@ -261,7 +280,7 @@ PlasmoidItem {
                         Item { height: 12 }
                         Text { text: "OFF"; font.family: root.mono; font.pixelSize: root.fzTiny; font.letterSpacing: 1; color: root.clrSub }
                         Text {
-                            text: offlineCountLabel
+                            text: fullRep.offlineCount.toString().padStart(2, "0")
                             font.family: root.mono; font.pixelSize: 15; font.bold: true; font.letterSpacing: 2
                             color: root.clrMuted
                         }
@@ -431,6 +450,9 @@ PlasmoidItem {
                             property bool isStarting: false
                             property bool isExpanded: false
                             property var  containerList: []
+
+                            onIsRunningChanged:  fullRep.setProjectRunning(origIndex, isRunning || isStarting)
+                            onIsStartingChanged: fullRep.setProjectRunning(origIndex, isRunning || isStarting)
 
                             property var composeFilePaths:     []
                             property var composeFileNames:     []
@@ -740,7 +762,8 @@ PlasmoidItem {
                                                 spacing: 6
                                                 Text {
                                                     text: "PATH"; Layout.preferredWidth: 54
-                                                    font.family: root.mono; font.pixelSize: root.fzSmall; font.letterSpacing: 2; color: root.clrSub
+                                                    font.family: root.mono; font.pixelSize: root.fzSmall; font.letterSpacing: 2
+                                                    font.bold: true; color: root.clrText
                                                 }
                                                 Text {
                                                     Layout.fillWidth: true
@@ -755,17 +778,18 @@ PlasmoidItem {
                                                 spacing: 6
                                                 Text {
                                                     text: "STATUS"; Layout.preferredWidth: 54
-                                                    font.family: root.mono; font.pixelSize: root.fzSmall; font.letterSpacing: 2; color: root.clrSub
+                                                    font.family: root.mono; font.pixelSize: root.fzSmall; font.letterSpacing: 2
+                                                    font.bold: true; color: root.clrText
                                                 }
                                                 Rectangle {
                                                     Layout.preferredWidth: 160; Layout.preferredHeight: 10
-                                                    color: "#aaaaaa"; border.color: "#888888"; border.width: 1
+                                                    color: "#888888"; border.color: "#555555"; border.width: 1
                                                     Rectangle {
                                                         x: 1; y: 1
                                                         height: parent.height - 2
-                                                        color: projectItem.isRunning || projectItem.isStarting ? root.clrGreen : "#888888"
+                                                        color: projectItem.isRunning || projectItem.isStarting ? root.clrGreen : "#666666"
                                                         width: projectItem.isRunning  ? parent.width - 2 :
-                                                               projectItem.isStarting ? (parent.width - 2) * 0.45 : 10
+                                                               projectItem.isStarting ? (parent.width - 2) * 0.45 : 0
                                                         Behavior on width { NumberAnimation { duration: 400; easing.type: Easing.InOutQuad } }
                                                     }
                                                 }
@@ -781,7 +805,8 @@ PlasmoidItem {
                                                 spacing: 6
                                                 Text {
                                                     text: "EDITOR"; Layout.preferredWidth: 54
-                                                    font.family: root.mono; font.pixelSize: root.fzSmall; font.letterSpacing: 2; color: root.clrSub
+                                                    font.family: root.mono; font.pixelSize: root.fzSmall; font.letterSpacing: 2
+                                                    font.bold: true; color: root.clrText
                                                 }
                                                 Rectangle {
                                                     implicitWidth: editorTxt.implicitWidth + 16; implicitHeight: 18
@@ -812,7 +837,8 @@ PlasmoidItem {
                                                 spacing: 6
                                                 Text {
                                                     text: "FILE"; Layout.preferredWidth: 54
-                                                    font.family: root.mono; font.pixelSize: root.fzSmall; font.letterSpacing: 2; color: root.clrSub
+                                                    font.family: root.mono; font.pixelSize: root.fzSmall; font.letterSpacing: 2
+                                                    font.bold: true; color: root.clrText
                                                 }
                                                 Rectangle {
                                                     implicitWidth: fileTxt.implicitWidth + 16; implicitHeight: 18
@@ -822,7 +848,7 @@ PlasmoidItem {
                                                     Text {
                                                         id: fileTxt; anchors.centerIn: parent
                                                         text: projectItem.composeFileNames.length > 0 ? projectItem.composeFileNames[projectItem.selectedComposeIndex] : "—"
-                                                        font.family: root.mono; font.pixelSize: 8; color: root.clrSub
+                                                        font.family: root.mono; font.pixelSize: root.fzSmall; color: root.clrText
                                                     }
                                                     MouseArea {
                                                         anchors.fill: parent
@@ -1164,8 +1190,5 @@ PlasmoidItem {
             }
         }
 
-        // Running/offline counts — computed from repeater items
-        property string runningCountLabel: "—"
-        property string offlineCountLabel: "—"
     }
 }
