@@ -13,6 +13,24 @@ PlasmoidItem {
 
     preferredRepresentation: compactRepresentation
 
+    // ── Theme ──────────────────────────────────────────────────────────────
+    readonly property color clrBg:     "#c0c0c0"
+    readonly property color clrCard:   "#d4d4d4"
+    readonly property color clrHdr:    "#111111"
+    readonly property color clrBorder: "#111111"
+    readonly property color clrGreen:  "#00ff00"
+    readonly property color clrText:   "#111111"
+    readonly property color clrSub:    "#333333"
+    readonly property color clrMuted:  "#666666"
+    readonly property color clrBtn:    "#b8b8b8"
+    readonly property string mono:     "Courier New"
+    // font sizes
+    readonly property int fzTiny:   8
+    readonly property int fzSmall:  9
+    readonly property int fzNormal: 10
+    readonly property int fzLarge:  13
+
+    // ── DataSource ─────────────────────────────────────────────────────────
     P5Support.DataSource {
         id: executable
         engine: "executable"
@@ -37,11 +55,9 @@ PlasmoidItem {
     function openProject(projectPath, editorCmd) {
         executable.exec((editorCmd || "code --new-window") + " '" + projectPath + "'")
     }
-
     function projectName(path) {
         return path.split("/").filter(s => s.length > 0).pop() || path
     }
-
     function addProject(path) {
         var list = Plasmoid.configuration.projects.slice()
         if (list.indexOf(path) < 0) {
@@ -52,7 +68,6 @@ PlasmoidItem {
             Plasmoid.configuration.projectEditors = editors
         }
     }
-
     function removeProject(idx) {
         var list = Plasmoid.configuration.projects.slice()
         list.splice(idx, 1)
@@ -61,7 +76,6 @@ PlasmoidItem {
         editors.splice(idx, 1)
         Plasmoid.configuration.projectEditors = editors
     }
-
     function moveProject(from, to) {
         if (from === to) return
         var projects = Plasmoid.configuration.projects.slice()
@@ -70,16 +84,12 @@ PlasmoidItem {
         var e = editors.splice(from, 1)[0]
         projects.splice(to, 0, p)
         editors.splice(to, 0, e)
-        Plasmoid.configuration.projects      = projects
+        Plasmoid.configuration.projects       = projects
         Plasmoid.configuration.projectEditors = editors
     }
-
     function extractFirstPort(portsStr) {
         if (!portsStr || portsStr.length === 0) return ""
-        var seen = {}
-        var ports = []
-        var re = /:(\d+)->/g
-        var m
+        var seen = {}, ports = [], re = /:(\d+)->/g, m
         while ((m = re.exec(portsStr)) !== null) {
             if (!seen[m[1]]) { seen[m[1]] = true; ports.push(m[1]) }
         }
@@ -93,35 +103,35 @@ PlasmoidItem {
         onAccepted: addProject(folder.toString().replace("file://", ""))
     }
 
+    // ── Compact ────────────────────────────────────────────────────────────
     compactRepresentation: MouseArea {
-        id: compactRoot
         hoverEnabled: true
         onClicked: root.expanded = !root.expanded
-
         Kirigami.Icon {
             anchors.centerIn: parent
             source: "code-context"
             width: Math.min(parent.width, parent.height) * 0.85
             height: width
-            opacity: compactRoot.containsMouse ? 0.7 : 1.0
+            opacity: parent.containsMouse ? 0.7 : 1.0
             Behavior on opacity { NumberAnimation { duration: 100 } }
         }
     }
 
-    fullRepresentation: ColumnLayout {
+    // ── Full representation ────────────────────────────────────────────────
+    fullRepresentation: Rectangle {
         id: fullRep
-        spacing: 0
+        color: root.clrBg
 
-        Layout.minimumWidth:   Kirigami.Units.gridUnit * 22
-        Layout.preferredWidth: Kirigami.Units.gridUnit * 26
-        Layout.minimumHeight:  Kirigami.Units.gridUnit * 10
-        Layout.preferredHeight: Kirigami.Units.gridUnit * 28
+        Layout.minimumWidth:   Kirigami.Units.gridUnit * 28
+        Layout.preferredWidth: Kirigami.Units.gridUnit * 30
+        Layout.minimumHeight:  Kirigami.Units.gridUnit * 18
+        Layout.preferredHeight: Kirigami.Units.gridUnit * 36
 
         property string searchText: ""
-        property bool   searchVisible:          false
-        property bool   dragEnabled:            false
-        property bool   deleteEnabled:          false
-        property bool   editorSelectorEnabled:  false
+        property bool   searchVisible:         false
+        property bool   dragEnabled:           false
+        property bool   deleteEnabled:         false
+        property bool   editorSelectorEnabled: false
         property int    draggedIndex:    -1
         property int    dropTargetIndex: -1
 
@@ -130,9 +140,9 @@ PlasmoidItem {
         }
 
         property var filteredProjects: {
-            var q        = searchText.toLowerCase()
+            var q = searchText.toLowerCase()
             var projects = Plasmoid.configuration.projects
-            var result   = []
+            var result = []
             for (var i = 0; i < projects.length; i++) {
                 var name = root.projectName(projects[i]).toLowerCase()
                 if (q === "" || name.indexOf(q) >= 0)
@@ -141,699 +151,1021 @@ PlasmoidItem {
             return result
         }
 
-        // ── Header ──────────────────────────────────────────────────────────
-        PlasmaExtras.PlasmoidHeading {
-            Layout.fillWidth: true
+        ColumnLayout {
+            anchors.fill: parent
+            spacing: 0
 
-            ColumnLayout {
-                anchors.fill: parent
-                spacing: 0
+            // ── HEADER ──────────────────────────────────────────────────────
+            Rectangle {
+                Layout.fillWidth: true
+                height: 64
+                color: root.clrCard
+
+                Rectangle {
+                    anchors.bottom: parent.bottom
+                    width: parent.width; height: 2
+                    color: root.clrBorder
+                }
 
                 RowLayout {
-                    Layout.fillWidth: true
+                    anchors.fill: parent
+                    anchors.leftMargin: 8
+                    anchors.rightMargin: 8
+                    spacing: 0
 
-                    Kirigami.Icon {
-                        source: "code-context"
-                        Layout.preferredWidth:  Kirigami.Units.iconSizes.small
-                        Layout.preferredHeight: Kirigami.Units.iconSizes.small
-                    }
-
-                    PlasmaExtras.Heading {
-                        text: "Proyectos"
-                        level: 3
+                    // Barcode + title
+                    Row {
+                        spacing: 6
                         Layout.fillWidth: true
-                    }
 
-                    PlasmaComponents.ToolButton {
-                        icon.name: "search"
-                        flat: true
-                        checkable: true
-                        checked: fullRep.searchVisible
-                        onClicked: {
-                            fullRep.searchVisible = !fullRep.searchVisible
-                            if (!fullRep.searchVisible) fullRep.searchText = ""
-                            else searchField.forceActiveFocus()
-                        }
-                        PlasmaComponents.ToolTip { text: "Buscar proyecto" }
-                    }
-
-                    PlasmaComponents.ToolButton {
-                        icon.name: "document-edit"
-                        flat: true
-                        checkable: true
-                        checked: fullRep.editorSelectorEnabled
-                        onClicked: fullRep.editorSelectorEnabled = !fullRep.editorSelectorEnabled
-                        PlasmaComponents.ToolTip { text: "Seleccionar editor" }
-                    }
-
-                    PlasmaComponents.ToolButton {
-                        icon.name: "edit-delete"
-                        flat: true
-                        checkable: true
-                        checked: fullRep.deleteEnabled
-                        onClicked: fullRep.deleteEnabled = !fullRep.deleteEnabled
-                        PlasmaComponents.ToolTip { text: "Eliminar proyectos" }
-                    }
-
-                    PlasmaComponents.ToolButton {
-                        icon.name: "transform-move"
-                        flat: true
-                        checkable: true
-                        checked: fullRep.dragEnabled
-                        onClicked: fullRep.dragEnabled = !fullRep.dragEnabled
-                        PlasmaComponents.ToolTip { text: "Reordenar proyectos" }
-                    }
-
-                    PlasmaComponents.ToolButton {
-                        icon.name: "list-add"
-                        flat: true
-                        onClicked: folderDialog.open()
-                        PlasmaComponents.ToolTip { text: "Añadir proyecto" }
-                    }
-                }
-
-                PlasmaComponents.TextField {
-                    id: searchField
-                    visible: fullRep.searchVisible
-                    Layout.fillWidth: true
-                    placeholderText: "Buscar proyecto..."
-                    onTextChanged: fullRep.searchText = text
-                    Keys.onEscapePressed: {
-                        fullRep.searchVisible = false
-                        fullRep.searchText    = ""
-                    }
-                }
-            }
-        }
-
-        // ── Empty states ────────────────────────────────────────────────────
-        Item {
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-            visible: Plasmoid.configuration.projects.length === 0
-
-            PlasmaComponents.Label {
-                anchors.centerIn: parent
-                text: "Sin proyectos.\nPresiona + para añadir uno."
-                horizontalAlignment: Text.AlignHCenter
-                opacity: 0.5
-                wrapMode: Text.WordWrap
-            }
-        }
-
-        Item {
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-            visible: Plasmoid.configuration.projects.length > 0 && fullRep.filteredProjects.length === 0
-
-            PlasmaComponents.Label {
-                anchors.centerIn: parent
-                text: "Sin resultados."
-                opacity: 0.5
-            }
-        }
-
-        // ── Project list ─────────────────────────────────────────────────────
-        PlasmaComponents.ScrollView {
-            id: projectsScrollView
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-            clip: true
-            visible: fullRep.filteredProjects.length > 0
-
-            Column {
-                id: projectsColumn
-                width: projectsScrollView.availableWidth
-
-                Repeater {
-                    id: projectsRepeater
-                    model: fullRep.filteredProjects
-
-                    delegate: Column {
-                        id: projectItem
-                        width: parent ? parent.width : 0
-
-                        property string projectPath: modelData.path
-                        property int    origIndex:   modelData.origIndex
-
-                        property bool isRunning:  false
-                        property bool isLoading:  false
-                        property bool isStarting: false
-                        property bool isExpanded: false
-                        property var  containerList: []
-
-                        property var composeFilePaths:     []
-                        property var composeFileNames:     []
-                        property int selectedComposeIndex: 0
-
-                        property string currentEditor: {
-                            var editors = Plasmoid.configuration.projectEditors
-                            return (editors && editors.length > origIndex) ? editors[origIndex] : "code --new-window"
-                        }
-
-                        // ── Helpers ──────────────────────────────────────────
-                        function setEditor(cmd) {
-                            var editors = Plasmoid.configuration.projectEditors.slice()
-                            while (editors.length <= origIndex) editors.push("code --new-window")
-                            editors[origIndex] = cmd
-                            Plasmoid.configuration.projectEditors = editors
-                        }
-
-                        function dockerComposeBase() {
-                            if (composeFilePaths.length > 0)
-                                return "docker compose -f '" + composeFilePaths[selectedComposeIndex] + "'"
-                            return "docker compose --project-directory '" + projectPath + "'"
-                        }
-
-                        // ── Data sources ─────────────────────────────────────
-                        FolderListModel {
-                            id: dockerFiles
-                            folder: "file://" + projectPath
-                            showFiles: true
-                            showDirs: false
-                            nameFilters: ["docker-compose*.yml", "docker-compose*.yaml", "compose*.yml", "compose*.yaml"]
-                            onCountChanged: {
-                                if (count === 0) return
-                                var names = [], paths = []
-                                for (var i = 0; i < count; i++) {
-                                    names.push(dockerFiles.get(i, "fileName"))
-                                    paths.push(dockerFiles.get(i, "filePath"))
-                                }
-                                projectItem.composeFileNames     = names
-                                projectItem.composeFilePaths     = paths
-                                projectItem.selectedComposeIndex = 0
-                                projectItem.checkStatus()
-                            }
-                        }
-
-                        P5Support.DataSource {
-                            id: statusSource
-                            engine: "executable"
-                            connectedSources: []
-                            onNewData: (sourceName, data) => {
-                                if (!projectItem.isStarting) {
-                                    var running = data["stdout"].trim().length > 0
-                                    projectItem.isRunning = running
-                                    projectItem.isLoading = false
-                                    if (!running) projectItem.isExpanded = false
-                                }
-                                disconnectSource(sourceName)
-                            }
-                        }
-
-                        P5Support.DataSource {
-                            id: downSource
-                            engine: "executable"
-                            connectedSources: []
-                            onNewData: (sourceName) => {
-                                disconnectSource(sourceName)
-                                projectItem.checkStatus()
-                            }
-                        }
-
-                        P5Support.DataSource {
-                            id: containersSource
-                            engine: "executable"
-                            connectedSources: []
-                            onNewData: (sourceName, data) => {
-                                var lines = data["stdout"].trim().split("\n").filter(l => l.length > 0)
-                                var containers = []
-                                for (var i = 0; i < lines.length; i++) {
-                                    var parts = lines[i].split("|")
-                                    if (parts.length >= 2) {
-                                        containers.push({
-                                            service: parts[0].trim(),
-                                            state:   parts[1].trim(),
-                                            ports:   parts.length > 2 ? parts[2].trim() : ""
-                                        })
-                                    }
-                                }
-                                projectItem.containerList = containers
-                                disconnectSource(sourceName)
-
-                                if (projectItem.isStarting && containers.length > 0) {
-                                    var allSettled = containers.every(function(c) {
-                                        return c.state === "running" || c.state === "exited" || c.state === "dead"
-                                    })
-                                    if (allSettled) {
-                                        projectItem.isStarting = false
-                                        startupTimeoutTimer.stop()
-                                        projectItem.isRunning = containers.some(function(c) { return c.state === "running" })
+                        // Barcode
+                        Column {
+                            anchors.verticalCenter: parent.verticalCenter
+                            spacing: 2
+                            Row {
+                                spacing: 0
+                                property var bars: [2,1,4,1,2,1,3,1,2,4,1,2,1,3,2,1]
+                                Repeater {
+                                    model: parent.bars.length
+                                    Rectangle {
+                                        width: parent.parent.bars[index]; height: 28
+                                        color: index % 2 === 0 ? root.clrHdr : "transparent"
                                     }
                                 }
                             }
-                        }
-
-                        function checkStatus() {
-                            statusSource.connectSource(dockerComposeBase() + " ps --status running -q 2>/dev/null")
-                        }
-
-                        function fetchContainers() {
-                            containersSource.connectSource(dockerComposeBase() + " ps --format '{{.Service}}|{{.State}}|{{.Ports}}' 2>/dev/null")
-                        }
-
-                        // ── Timers ────────────────────────────────────────────
-                        Timer {
-                            id: refreshTimer
-                            interval: 3000
-                            repeat: true
-                            running: root.expanded && dockerFiles.count > 0 && !projectItem.isStarting && !projectItem.isLoading
-                            onTriggered: {
-                                projectItem.checkStatus()
-                                if (projectItem.isExpanded) projectItem.fetchContainers()
+                            Text {
+                                text: "1 04-52-900"
+                                font.family: root.mono; font.pixelSize: 6
+                                color: root.clrSub
                             }
                         }
 
-                        Timer {
-                            id: startupPollTimer
-                            interval: 1000
-                            repeat: true
-                            running: projectItem.isStarting
-                            onTriggered: projectItem.fetchContainers()
-                        }
-
-                        Timer {
-                            id: startupTimeoutTimer
-                            interval: 60000
-                            repeat: false
-                            onTriggered: {
-                                projectItem.isStarting = false
-                                projectItem.isRunning  = projectItem.containerList.some(function(c) { return c.state === "running" })
+                        // Title
+                        Column {
+                            anchors.verticalCenter: parent.verticalCenter
+                            spacing: 4
+                            Text {
+                                text: "DEV PROJECTS"
+                                font.family: root.mono; font.pixelSize: 15
+                                font.bold: true; font.letterSpacing: 2
+                                color: root.clrText
+                            }
+                            Text {
+                                text: "PLASMA WIDGET  //  PROJECT LAUNCHER"
+                                font.family: root.mono; font.pixelSize: root.fzTiny
+                                font.letterSpacing: 1; color: root.clrSub
                             }
                         }
+                    }
 
-                        Connections {
-                            target: root
-                            function onExpandedChanged() {
-                                if (root.expanded) {
-                                    if (dockerFiles.count > 0 && !projectItem.isStarting)
-                                        projectItem.checkStatus()
-                                } else {
-                                    editorMenu.close()
-                                    composeMenu.close()
-                                    fullRep.draggedIndex    = -1
-                                    fullRep.dropTargetIndex = -1
-                                }
-                            }
+                    // Stats dividers
+                    Rectangle { width: 1; Layout.fillHeight: true; color: root.clrBorder; opacity: 0.3 }
+
+                    Column {
+                        width: 48; Layout.fillHeight: true
+                        leftPadding: 8
+                        spacing: 2
+                        Item { height: 12 }
+                        Text { text: "TOTAL"; font.family: root.mono; font.pixelSize: root.fzTiny; font.letterSpacing: 1; color: root.clrSub }
+                        Text {
+                            text: Plasmoid.configuration.projects.length.toString().padStart(2, "0")
+                            font.family: root.mono; font.pixelSize: 15; font.bold: true; font.letterSpacing: 2
+                            color: root.clrText
                         }
+                    }
 
-                        // ── Drop indicator (top) ──────────────────────────────
+                    Rectangle { width: 1; Layout.fillHeight: true; color: root.clrBorder; opacity: 0.3 }
+
+                    Column {
+                        width: 68; Layout.fillHeight: true
+                        leftPadding: 8
+                        spacing: 2
+                        Item { height: 12 }
+                        Text { text: "RUNNING"; font.family: root.mono; font.pixelSize: root.fzTiny; font.letterSpacing: 1; color: root.clrSub }
                         Rectangle {
-                            visible: fullRep.dragEnabled &&
-                                     fullRep.draggedIndex !== -1 &&
-                                     fullRep.dropTargetIndex === origIndex &&
-                                     fullRep.draggedIndex !== origIndex
-                            width: parent.width
-                            height: 2
-                            color: Kirigami.Theme.highlightColor
-                            z: 1
+                            width: 40; height: 16; color: root.clrGreen
+                            Text {
+                                anchors.centerIn: parent
+                                text: runningCountLabel
+                                font.family: root.mono; font.pixelSize: 10; font.bold: true; color: "#000"
+                            }
                         }
+                    }
 
-                        // ── Project row ───────────────────────────────────────
-                        RowLayout {
-                            width: parent.width
-                            spacing: 0
-                            opacity: fullRep.draggedIndex === origIndex ? 0.3 : 1.0
-                            Behavior on opacity { NumberAnimation { duration: 100 } }
+                    Rectangle { width: 1; Layout.fillHeight: true; color: root.clrBorder; opacity: 0.3 }
 
-                            // Drag handle
-                            Item {
-                                visible: fullRep.dragEnabled && fullRep.searchText === ""
-                                Layout.preferredWidth:  Kirigami.Units.gridUnit * 1.5
-                                Layout.preferredHeight: Kirigami.Units.gridUnit * 2
-                                Layout.alignment: Qt.AlignVCenter
+                    Column {
+                        width: 42; Layout.fillHeight: true
+                        leftPadding: 8
+                        spacing: 2
+                        Item { height: 12 }
+                        Text { text: "OFF"; font.family: root.mono; font.pixelSize: root.fzTiny; font.letterSpacing: 1; color: root.clrSub }
+                        Text {
+                            text: offlineCountLabel
+                            font.family: root.mono; font.pixelSize: 15; font.bold: true; font.letterSpacing: 2
+                            color: root.clrMuted
+                        }
+                    }
+                }
+            }
+
+            // ── TOOLBAR ─────────────────────────────────────────────────────
+            Rectangle {
+                Layout.fillWidth: true
+                height: 30
+                color: "#cacaca"
+
+                Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: root.clrBorder }
+
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.leftMargin: 6
+                    anchors.rightMargin: 6
+                    spacing: 4
+
+                    Repeater {
+                        model: [
+                            { label: "⌕ SRCH",  tip: "Buscar proyecto",    prop: "searchVisible"        },
+                            { label: "⇅ MOVE",  tip: "Reordenar",          prop: "dragEnabled"          },
+                            { label: "✎ EDIT",  tip: "Selector de editor", prop: "editorSelectorEnabled" },
+                            { label: "✕ DEL",   tip: "Eliminar proyectos", prop: "deleteEnabled"        }
+                        ]
+                        delegate: Rectangle {
+                            Layout.preferredWidth: 60; Layout.preferredHeight: 20
+                            property bool active: fullRep[modelData.prop]
+                            color:        active ? (modelData.label === "✕ DEL" ? "#cc2200" : root.clrGreen) : root.clrBtn
+                            border.color: root.clrBorder; border.width: 1.5
+                            Text {
+                                anchors.centerIn: parent
+                                text:  modelData.label
+                                font.family: root.mono; font.pixelSize: 8; font.bold: true
+                                color: active ? (modelData.label === "✕ DEL" ? "#fff" : "#000") : root.clrText
+                            }
+                            HoverHandler { id: toolbarHov }
+                            MouseArea {
+                                anchors.fill: parent
+                                onClicked: {
+                                    var newVal = !fullRep[modelData.prop]
+                                    fullRep[modelData.prop] = newVal
+                                    if (modelData.prop === "searchVisible") {
+                                        if (!newVal) fullRep.searchText = ""
+                                        else searchField.forceActiveFocus()
+                                    }
+                                }
+                            }
+                            PlasmaComponents.ToolTip { text: modelData.tip; visible: toolbarHov.hovered }
+                        }
+                    }
+
+                    Item { Layout.fillWidth: true }
+
+                    Rectangle {
+                        Layout.preferredWidth: 64; Layout.preferredHeight: 22
+                        color: root.clrGreen; border.color: root.clrBorder; border.width: 2
+                        Text {
+                            anchors.centerIn: parent
+                            text: "+ ADD"; font.family: root.mono; font.pixelSize: 9; font.bold: true; color: "#000"
+                        }
+                        HoverHandler { id: addHov }
+                        MouseArea { anchors.fill: parent; onClicked: folderDialog.open() }
+                        PlasmaComponents.ToolTip { text: "Añadir proyecto"; visible: addHov.hovered }
+                    }
+                }
+            }
+
+            // ── SEARCH FIELD ─────────────────────────────────────────────────
+            Rectangle {
+                Layout.fillWidth: true
+                height: fullRep.searchVisible ? 30 : 0
+                visible: fullRep.searchVisible
+                color: "#b8b8b8"
+                border.color: root.clrBorder; border.width: 1
+                clip: true
+
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.leftMargin: 10; anchors.rightMargin: 10
+                    spacing: 6
+
+                    Text { text: "⌕"; font.family: root.mono; font.pixelSize: 13; color: root.clrSub }
+
+                    TextInput {
+                        id: searchField
+                        Layout.fillWidth: true
+                        font.family: root.mono; font.pixelSize: 9; font.letterSpacing: 1
+                        color: root.clrText
+                        onTextChanged: fullRep.searchText = text
+                        Keys.onEscapePressed: {
+                            fullRep.searchVisible = false
+                            fullRep.searchText    = ""
+                            text = ""
+                        }
+                    }
+
+                    Text {
+                        text: "ESC"
+                        font.family: root.mono; font.pixelSize: 7; font.letterSpacing: 1
+                        color: root.clrMuted
+                    }
+                }
+            }
+
+            // ── EMPTY STATES ─────────────────────────────────────────────────
+            Item {
+                Layout.fillWidth: true; Layout.fillHeight: true
+                visible: Plasmoid.configuration.projects.length === 0
+                Column {
+                    anchors.centerIn: parent; spacing: 8
+                    Text {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        text: "NO PROJECTS"
+                        font.family: root.mono; font.pixelSize: 12; font.bold: true; font.letterSpacing: 3
+                        color: root.clrMuted
+                    }
+                    Text {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        text: "PRESS + ADD TO BEGIN"
+                        font.family: root.mono; font.pixelSize: 8; font.letterSpacing: 2
+                        color: root.clrMuted
+                    }
+                }
+            }
+
+            Item {
+                Layout.fillWidth: true; Layout.fillHeight: true
+                visible: Plasmoid.configuration.projects.length > 0 && fullRep.filteredProjects.length === 0
+                Text {
+                    anchors.centerIn: parent
+                    text: "NO RESULTS"
+                    font.family: root.mono; font.pixelSize: 11; font.bold: true; font.letterSpacing: 3
+                    color: root.clrMuted
+                }
+            }
+
+            // ── PROJECT LIST ─────────────────────────────────────────────────
+            PlasmaComponents.ScrollView {
+                id: projectsScrollView
+                Layout.fillWidth: true; Layout.fillHeight: true
+                clip: true
+                visible: fullRep.filteredProjects.length > 0
+
+                Column {
+                    width: projectsScrollView.availableWidth
+                    spacing: 6
+                    topPadding: 6; bottomPadding: 6
+
+                    Repeater {
+                        id: projectsRepeater
+                        model: fullRep.filteredProjects
+
+                        delegate: Column {
+                            id: projectItem
+                            width: parent ? parent.width - 12 : 0
+                            x: 6
+
+                            property string projectPath: modelData.path
+                            property int    origIndex:   modelData.origIndex
+
+                            property bool isRunning:  false
+                            property bool isLoading:  false
+                            property bool isStarting: false
+                            property bool isExpanded: false
+                            property var  containerList: []
+
+                            property var composeFilePaths:     []
+                            property var composeFileNames:     []
+                            property int selectedComposeIndex: 0
+
+                            property string currentEditor: {
+                                var editors = Plasmoid.configuration.projectEditors
+                                return (editors && editors.length > origIndex) ? editors[origIndex] : "code --new-window"
+                            }
+
+                            function setEditor(cmd) {
+                                var editors = Plasmoid.configuration.projectEditors.slice()
+                                while (editors.length <= origIndex) editors.push("code --new-window")
+                                editors[origIndex] = cmd
+                                Plasmoid.configuration.projectEditors = editors
+                            }
+                            function dockerComposeBase() {
+                                if (composeFilePaths.length > 0)
+                                    return "docker compose -f '" + composeFilePaths[selectedComposeIndex] + "'"
+                                return "docker compose --project-directory '" + projectPath + "'"
+                            }
+
+                            // ── Data sources ──────────────────────────────────
+                            FolderListModel {
+                                id: dockerFiles
+                                folder: "file://" + projectPath
+                                showFiles: true; showDirs: false
+                                nameFilters: ["docker-compose*.yml","docker-compose*.yaml","compose*.yml","compose*.yaml"]
+                                onCountChanged: {
+                                    if (count === 0) return
+                                    var names = [], paths = []
+                                    for (var i = 0; i < count; i++) {
+                                        names.push(dockerFiles.get(i, "fileName"))
+                                        paths.push(dockerFiles.get(i, "filePath"))
+                                    }
+                                    projectItem.composeFileNames     = names
+                                    projectItem.composeFilePaths     = paths
+                                    projectItem.selectedComposeIndex = 0
+                                    projectItem.checkStatus()
+                                }
+                            }
+
+                            P5Support.DataSource {
+                                id: statusSource
+                                engine: "executable"; connectedSources: []
+                                onNewData: (sourceName, data) => {
+                                    if (!projectItem.isStarting) {
+                                        var running = data["stdout"].trim().length > 0
+                                        projectItem.isRunning = running
+                                        projectItem.isLoading = false
+                                        if (!running) projectItem.isExpanded = false
+                                    }
+                                    disconnectSource(sourceName)
+                                }
+                            }
+
+                            P5Support.DataSource {
+                                id: downSource
+                                engine: "executable"; connectedSources: []
+                                onNewData: (sourceName) => {
+                                    disconnectSource(sourceName)
+                                    projectItem.checkStatus()
+                                }
+                            }
+
+                            P5Support.DataSource {
+                                id: containersSource
+                                engine: "executable"; connectedSources: []
+                                onNewData: (sourceName, data) => {
+                                    var lines = data["stdout"].trim().split("\n").filter(l => l.length > 0)
+                                    var containers = []
+                                    for (var i = 0; i < lines.length; i++) {
+                                        var parts = lines[i].split("|")
+                                        if (parts.length >= 2)
+                                            containers.push({ service: parts[0].trim(), state: parts[1].trim(), ports: parts.length > 2 ? parts[2].trim() : "" })
+                                    }
+                                    projectItem.containerList = containers
+                                    disconnectSource(sourceName)
+                                    if (projectItem.isStarting && containers.length > 0) {
+                                        var allSettled = containers.every(function(c) {
+                                            return c.state === "running" || c.state === "exited" || c.state === "dead"
+                                        })
+                                        if (allSettled) {
+                                            projectItem.isStarting = false
+                                            startupTimeoutTimer.stop()
+                                            projectItem.isRunning = containers.some(function(c) { return c.state === "running" })
+                                        }
+                                    }
+                                }
+                            }
+
+                            function checkStatus() {
+                                statusSource.connectSource(dockerComposeBase() + " ps --status running -q 2>/dev/null")
+                            }
+                            function fetchContainers() {
+                                containersSource.connectSource(dockerComposeBase() + " ps --format '{{.Service}}|{{.State}}|{{.Ports}}' 2>/dev/null")
+                            }
+
+                            // ── Timers ────────────────────────────────────────
+                            Timer {
+                                id: refreshTimer; interval: 3000; repeat: true
+                                running: root.expanded && dockerFiles.count > 0 && !projectItem.isStarting && !projectItem.isLoading
+                                onTriggered: { projectItem.checkStatus(); if (projectItem.isExpanded) projectItem.fetchContainers() }
+                            }
+                            Timer {
+                                id: startupPollTimer; interval: 1000; repeat: true
+                                running: projectItem.isStarting
+                                onTriggered: projectItem.fetchContainers()
+                            }
+                            Timer {
+                                id: startupTimeoutTimer; interval: 60000; repeat: false
+                                onTriggered: {
+                                    projectItem.isStarting = false
+                                    projectItem.isRunning  = projectItem.containerList.some(function(c) { return c.state === "running" })
+                                }
+                            }
+
+                            Connections {
+                                target: root
+                                function onExpandedChanged() {
+                                    if (root.expanded) {
+                                        if (dockerFiles.count > 0 && !projectItem.isStarting) projectItem.checkStatus()
+                                    } else {
+                                        editorMenu.close(); composeMenu.close()
+                                        fullRep.draggedIndex = -1; fullRep.dropTargetIndex = -1
+                                    }
+                                }
+                            }
+
+                            // Drop indicator top
+                            Rectangle {
+                                visible: fullRep.dragEnabled && fullRep.draggedIndex !== -1 &&
+                                         fullRep.dropTargetIndex === origIndex && fullRep.draggedIndex !== origIndex
+                                width: parent.width; height: 3; color: root.clrGreen
+                            }
+
+                            // ── CARD ──────────────────────────────────────────
+                            Rectangle {
+                                width: parent.width
+                                height: cardCol.implicitHeight
+                                color: root.clrCard
+                                border.color: root.clrBorder
+                                border.width: projectItem.isRunning || projectItem.isStarting ? 2 : 1
+                                opacity: fullRep.draggedIndex === origIndex ? 0.3 : 1.0
+                                Behavior on opacity { NumberAnimation { duration: 100 } }
+
+                                // Green left accent when running
+                                Rectangle {
+                                    visible: projectItem.isRunning || projectItem.isStarting
+                                    x: 0; y: 0; width: 5; height: parent.height
+                                    color: root.clrGreen
+                                    z: 1
+                                }
 
                                 Column {
-                                    anchors.centerIn: parent
-                                    spacing: 3
-                                    opacity: dragHandleArea.containsMouse ? 0.7 : 0.3
-                                    Repeater {
-                                        model: 3
-                                        Rectangle {
-                                            width: 4; height: 4; radius: 2
-                                            color: Kirigami.Theme.textColor
-                                        }
-                                    }
-                                }
+                                    id: cardCol
+                                    width: parent.width
 
-                                MouseArea {
-                                    id: dragHandleArea
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    preventStealing: true
-                                    cursorShape: pressed ? Qt.ClosedHandCursor : Qt.OpenHandCursor
-                                    acceptedButtons: Qt.LeftButton
+                                    // ── Card header bar ───────────────────────
+                                    Rectangle {
+                                        width: parent.width; height: 28
+                                        color: root.clrHdr
 
-                                    onPressed: (mouse) => {
-                                        fullRep.draggedIndex    = origIndex
-                                        fullRep.dropTargetIndex = origIndex
-                                    }
+                                        RowLayout {
+                                            anchors.fill: parent
+                                            anchors.leftMargin: 10
+                                            anchors.rightMargin: 8
+                                            spacing: 6
 
-                                    onPositionChanged: (mouse) => {
-                                        if (!pressed) return
-                                        var globalY = dragHandleArea.mapToGlobal(mouse.x, mouse.y).y
-                                        var count   = projectsRepeater.count
-                                        var newTarget = count  // sentinel = drop at end
-                                        for (var i = 0; i < count; i++) {
-                                            var item = projectsRepeater.itemAt(i)
-                                            if (!item) continue
-                                            var mid = item.mapToGlobal(0, 0).y + item.height / 2
-                                            if (globalY < mid) {
-                                                newTarget = item.origIndex
-                                                break
+                                            // Drag handle
+                                            Item {
+                                                visible: fullRep.dragEnabled && fullRep.searchText === ""
+                                                Layout.preferredWidth: 18; Layout.fillHeight: true
+
+                                                Column {
+                                                    anchors.centerIn: parent; spacing: 3
+                                                    Repeater {
+                                                        model: 3
+                                                        Rectangle {
+                                                            width: 14; height: 2
+                                                            color: dragArea.containsMouse ? root.clrGreen : "#555"
+                                                        }
+                                                    }
+                                                }
+                                                MouseArea {
+                                                    id: dragArea; anchors.fill: parent
+                                                    hoverEnabled: true; preventStealing: true
+                                                    cursorShape: pressed ? Qt.ClosedHandCursor : Qt.OpenHandCursor
+                                                    onPressed: { fullRep.draggedIndex = origIndex; fullRep.dropTargetIndex = origIndex }
+                                                    onPositionChanged: (mouse) => {
+                                                        if (!pressed) return
+                                                        var gy = dragArea.mapToGlobal(mouse.x, mouse.y).y
+                                                        var n  = projectsRepeater.count
+                                                        var newTarget = n
+                                                        for (var i = 0; i < n; i++) {
+                                                            var itm = projectsRepeater.itemAt(i)
+                                                            if (!itm) continue
+                                                            if (gy < itm.mapToGlobal(0, 0).y + itm.height / 2) { newTarget = itm.origIndex; break }
+                                                        }
+                                                        fullRep.dropTargetIndex = newTarget
+                                                    }
+                                                    onReleased: {
+                                                        var from = fullRep.draggedIndex, drop = fullRep.dropTargetIndex
+                                                        var n = Plasmoid.configuration.projects.length
+                                                        if (from !== -1 && drop !== -1 && from !== drop) {
+                                                            var to = Math.max(0, Math.min((from < drop) ? drop - 1 : drop, n - 1))
+                                                            root.moveProject(from, to)
+                                                        }
+                                                        fullRep.draggedIndex = -1; fullRep.dropTargetIndex = -1
+                                                    }
+                                                }
+                                            }
+
+                                            // Barcode decoration
+                                            Row {
+                                                spacing: 0
+                                                property var bars: [1,3,1,2,4,1,2,1,3,1,2,1]
+                                                Repeater {
+                                                    model: parent.bars.length
+                                                    Rectangle {
+                                                        width: parent.parent.bars[index]; height: 18
+                                                        color: index % 2 === 0
+                                                            ? (projectItem.isRunning || projectItem.isStarting ? root.clrGreen : "#555555")
+                                                            : "transparent"
+                                                        opacity: projectItem.isRunning ? 0.6 : 1.0
+                                                    }
+                                                }
+                                            }
+
+                                            // PROJECT_ID label
+                                            Text {
+                                                text: "PROJECT_ID"
+                                                font.family: root.mono; font.pixelSize: root.fzTiny; font.letterSpacing: 2
+                                                color: "#777777"
+                                            }
+
+                                            // Project name — expands
+                                            Text {
+                                                Layout.fillWidth: true
+                                                text: root.projectName(projectPath).toUpperCase()
+                                                font.family: root.mono; font.pixelSize: 10
+                                                font.bold: true; font.letterSpacing: 2
+                                                color: "#ffffff"
+                                                elide: Text.ElideRight
+                                            }
+
+                                            // Status badge
+                                            Rectangle {
+                                                Layout.preferredWidth: badgeTxt.implicitWidth + 20
+                                                Layout.preferredHeight: 16
+                                                color: projectItem.isRunning || projectItem.isStarting ? root.clrGreen : "#444444"
+                                                border.color: projectItem.isRunning || projectItem.isStarting ? root.clrGreen : "#666666"
+                                                border.width: 1
+                                                Text {
+                                                    id: badgeTxt
+                                                    anchors.centerIn: parent
+                                                    text: projectItem.isStarting ? "◌ STARTING" :
+                                                          projectItem.isRunning  ? "■ RUNNING"  :
+                                                          projectItem.isLoading  ? "◌ LOADING"  : "● OFFLINE"
+                                                    font.family: root.mono; font.pixelSize: 8; font.letterSpacing: 1
+                                                    color: projectItem.isRunning || projectItem.isStarting ? "#000000" : "#888888"
+                                                }
+                                            }
+
+                                            // Expand toggle
+                                            Rectangle {
+                                                visible: dockerFiles.count > 0 && (projectItem.isRunning || projectItem.isStarting)
+                                                Layout.preferredWidth: 20; Layout.preferredHeight: 18
+                                                color: "transparent"
+                                                Text {
+                                                    anchors.centerIn: parent
+                                                    text: projectItem.isExpanded ? "▲" : "▼"
+                                                    font.family: root.mono; font.pixelSize: 9; color: "#aaaaaa"
+                                                }
+                                                MouseArea {
+                                                    anchors.fill: parent
+                                                    onClicked: {
+                                                        projectItem.isExpanded = !projectItem.isExpanded
+                                                        if (projectItem.isExpanded) projectItem.fetchContainers()
+                                                    }
+                                                }
                                             }
                                         }
-                                        fullRep.dropTargetIndex = newTarget
-                                    }
 
-                                    onReleased: {
-                                        var from = fullRep.draggedIndex
-                                        var drop = fullRep.dropTargetIndex
-                                        var n    = Plasmoid.configuration.projects.length
-                                        if (from !== -1 && drop !== -1 && from !== drop) {
-                                            var to = (from < drop) ? drop - 1 : drop
-                                            to = Math.max(0, Math.min(to, n - 1))
-                                            root.moveProject(from, to)
+                                        // Click header to open project
+                                        MouseArea {
+                                            anchors.fill: parent; z: -1
+                                            enabled: !fullRep.dragEnabled
+                                            onClicked: { root.openProject(projectPath, projectItem.currentEditor); root.expanded = false }
+                                            cursorShape: Qt.PointingHandCursor
                                         }
-                                        fullRep.draggedIndex    = -1
-                                        fullRep.dropTargetIndex = -1
                                     }
-                                }
-                            }
 
-                            PlasmaComponents.ItemDelegate {
-                                Layout.fillWidth: true
-                                icon.name: {
-                                    var opt = root.editorOptions.find(e => e.cmd === projectItem.currentEditor)
-                                    return opt ? opt.icon : "code-context"
-                                }
-                                text: root.projectName(projectPath)
-                                onClicked: {
-                                    root.openProject(projectPath, projectItem.currentEditor)
-                                    root.expanded = false
-                                }
-                            }
+                                    // ── Card body ─────────────────────────────
+                                    Item {
+                                        width: parent.width
+                                        implicitHeight: bodyLayout.implicitHeight + 16
 
-                            // Expand/collapse tree
-                            PlasmaComponents.ToolButton {
-                                visible: dockerFiles.count > 0 && projectItem.isRunning && !projectItem.isLoading
-                                Layout.preferredWidth:  Kirigami.Units.gridUnit * 1.5
-                                Layout.preferredHeight: Kirigami.Units.gridUnit * 1.5
-                                Layout.alignment: Qt.AlignVCenter
-                                icon.name: projectItem.isExpanded ? "arrow-up" : "arrow-down"
-                                flat: true
-                                onClicked: {
-                                    projectItem.isExpanded = !projectItem.isExpanded
-                                    if (projectItem.isExpanded) projectItem.fetchContainers()
-                                }
-                                PlasmaComponents.ToolTip { text: projectItem.isExpanded ? "Colapsar servicios" : "Ver servicios" }
-                            }
+                                        ColumnLayout {
+                                            id: bodyLayout
+                                            x: 14; y: 8
+                                            width: parent.width - 20
+                                            spacing: 6
 
-                            // Docker up/stop/spinner
-                            Item {
-                                visible: dockerFiles.count > 0
-                                Layout.preferredWidth:  Kirigami.Units.gridUnit * 1.5
-                                Layout.preferredHeight: Kirigami.Units.gridUnit * 1.5
-                                Layout.alignment: Qt.AlignVCenter
+                                            // PATH
+                                            RowLayout {
+                                                spacing: 6
+                                                Text {
+                                                    text: "PATH"; Layout.preferredWidth: 54
+                                                    font.family: root.mono; font.pixelSize: root.fzSmall; font.letterSpacing: 2; color: root.clrSub
+                                                }
+                                                Text {
+                                                    Layout.fillWidth: true
+                                                    text: projectPath.replace(/^\/home\/[^/]+/, "~")
+                                                    font.family: root.mono; font.pixelSize: root.fzSmall; color: root.clrText
+                                                    elide: Text.ElideMiddle
+                                                }
+                                            }
 
-                                PlasmaComponents.BusyIndicator {
-                                    anchors.fill: parent
-                                    running: projectItem.isLoading
-                                    opacity: projectItem.isLoading ? 1.0 : 0.0
-                                    Behavior on opacity { NumberAnimation { duration: 150 } }
-                                }
+                                            // STATUS BAR
+                                            RowLayout {
+                                                spacing: 6
+                                                Text {
+                                                    text: "STATUS"; Layout.preferredWidth: 54
+                                                    font.family: root.mono; font.pixelSize: root.fzSmall; font.letterSpacing: 2; color: root.clrSub
+                                                }
+                                                Rectangle {
+                                                    Layout.preferredWidth: 160; Layout.preferredHeight: 10
+                                                    color: "#aaaaaa"; border.color: "#888888"; border.width: 1
+                                                    Rectangle {
+                                                        x: 1; y: 1
+                                                        height: parent.height - 2
+                                                        color: projectItem.isRunning || projectItem.isStarting ? root.clrGreen : "#888888"
+                                                        width: projectItem.isRunning  ? parent.width - 2 :
+                                                               projectItem.isStarting ? (parent.width - 2) * 0.45 : 10
+                                                        Behavior on width { NumberAnimation { duration: 400; easing.type: Easing.InOutQuad } }
+                                                    }
+                                                }
+                                                PlasmaComponents.BusyIndicator {
+                                                    Layout.preferredWidth: 14; Layout.preferredHeight: 14
+                                                    running: projectItem.isLoading; visible: projectItem.isLoading
+                                                }
+                                            }
 
-                                PlasmaComponents.ToolButton {
-                                    anchors.fill: parent
-                                    opacity: !projectItem.isLoading && !projectItem.isRunning && !projectItem.isStarting ? 1.0 : 0.0
-                                    enabled: !projectItem.isLoading && !projectItem.isRunning && !projectItem.isStarting
-                                    icon.name: "media-playback-start"
-                                    icon.color: Kirigami.Theme.positiveTextColor
-                                    flat: true
-                                    Behavior on opacity { NumberAnimation { duration: 150 } }
-                                    onClicked: {
-                                        projectItem.isRunning  = true
-                                        projectItem.isStarting = true
-                                        projectItem.isExpanded = true
-                                        executable.exec("sh -c \"" + projectItem.dockerComposeBase() + " up -d\"")
-                                        startupTimeoutTimer.restart()
-                                        projectItem.fetchContainers()
-                                    }
-                                    PlasmaComponents.ToolTip { text: "Iniciar Docker" }
-                                }
+                                            // EDITOR row
+                                            RowLayout {
+                                                visible: fullRep.editorSelectorEnabled
+                                                spacing: 6
+                                                Text {
+                                                    text: "EDITOR"; Layout.preferredWidth: 54
+                                                    font.family: root.mono; font.pixelSize: root.fzSmall; font.letterSpacing: 2; color: root.clrSub
+                                                }
+                                                Rectangle {
+                                                    implicitWidth: editorTxt.implicitWidth + 16; implicitHeight: 18
+                                                    color: root.clrBtn; border.color: root.clrBorder; border.width: 1
+                                                    Text {
+                                                        id: editorTxt; anchors.centerIn: parent
+                                                        text: { var o = root.editorOptions.find(e => e.cmd === projectItem.currentEditor); return o ? o.name.toUpperCase() : "CODE" }
+                                                        font.family: root.mono; font.pixelSize: 8; font.bold: true; color: root.clrText
+                                                    }
+                                                    MouseArea { anchors.fill: parent; onClicked: editorMenu.popup() }
+                                                    PlasmaComponents.Menu {
+                                                        id: editorMenu
+                                                        Repeater {
+                                                            model: root.editorOptions
+                                                            PlasmaComponents.MenuItem {
+                                                                text: modelData.name; checkable: true
+                                                                checked: projectItem.currentEditor === modelData.cmd
+                                                                onTriggered: projectItem.setEditor(modelData.cmd)
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
 
-                                PlasmaComponents.ToolButton {
-                                    anchors.fill: parent
-                                    opacity: !projectItem.isLoading && (projectItem.isRunning || projectItem.isStarting) ? 1.0 : 0.0
-                                    enabled: !projectItem.isLoading && (projectItem.isRunning || projectItem.isStarting)
-                                    icon.name: "media-playback-stop"
-                                    icon.color: Kirigami.Theme.negativeTextColor
-                                    flat: true
-                                    Behavior on opacity { NumberAnimation { duration: 150 } }
-                                    onClicked: {
-                                        projectItem.isStarting = false
-                                        projectItem.isLoading  = true
-                                        projectItem.isExpanded = false
-                                        startupTimeoutTimer.stop()
-                                        downSource.connectSource("sh -c \"" + projectItem.dockerComposeBase() + " down\"")
-                                    }
-                                    PlasmaComponents.ToolTip { text: "Detener Docker" }
-                                }
-                            }
+                                            // FILE row
+                                            RowLayout {
+                                                visible: dockerFiles.count > 0
+                                                spacing: 6
+                                                Text {
+                                                    text: "FILE"; Layout.preferredWidth: 54
+                                                    font.family: root.mono; font.pixelSize: root.fzSmall; font.letterSpacing: 2; color: root.clrSub
+                                                }
+                                                Rectangle {
+                                                    implicitWidth: fileTxt.implicitWidth + 16; implicitHeight: 18
+                                                    color: dockerFiles.count > 1 ? root.clrBtn : "transparent"
+                                                    border.color: dockerFiles.count > 1 ? root.clrBorder : "transparent"
+                                                    border.width: 1
+                                                    Text {
+                                                        id: fileTxt; anchors.centerIn: parent
+                                                        text: projectItem.composeFileNames.length > 0 ? projectItem.composeFileNames[projectItem.selectedComposeIndex] : "—"
+                                                        font.family: root.mono; font.pixelSize: 8; color: root.clrSub
+                                                    }
+                                                    MouseArea {
+                                                        anchors.fill: parent
+                                                        enabled: dockerFiles.count > 1 && !projectItem.isLoading && !projectItem.isStarting
+                                                        onClicked: composeMenu.popup()
+                                                    }
+                                                    PlasmaComponents.Menu {
+                                                        id: composeMenu
+                                                        Repeater {
+                                                            model: projectItem.composeFileNames
+                                                            PlasmaComponents.MenuItem {
+                                                                text: modelData; checkable: true
+                                                                checked: index === projectItem.selectedComposeIndex
+                                                                onTriggered: {
+                                                                    if (projectItem.selectedComposeIndex !== index) {
+                                                                        projectItem.selectedComposeIndex = index
+                                                                        projectItem.isExpanded = false
+                                                                        projectItem.isRunning  = false
+                                                                        projectItem.checkStatus()
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
 
-                            // Pull images
-                            PlasmaComponents.ToolButton {
-                                visible: dockerFiles.count > 0 && !projectItem.isLoading && !projectItem.isStarting
-                                Layout.preferredWidth:  Kirigami.Units.gridUnit * 1.5
-                                Layout.preferredHeight: Kirigami.Units.gridUnit * 1.5
-                                Layout.alignment: Qt.AlignVCenter
-                                icon.name: "edit-download"
-                                flat: true
-                                onClicked: executable.exec("konsole --workdir '" + projectPath + "' --hold -e sh -c \"" + projectItem.dockerComposeBase() + " pull\"")
-                                PlasmaComponents.ToolTip { text: "Actualizar imágenes" }
-                            }
+                                            // ── Action buttons ────────────────
+                                            RowLayout {
+                                                Layout.fillWidth: true
+                                                spacing: 4
 
-                            // Compose file selector
-                            PlasmaComponents.ToolButton {
-                                id: composeBtn
-                                visible: dockerFiles.count > 1 && !projectItem.isLoading && !projectItem.isStarting
-                                Layout.preferredWidth:  Kirigami.Units.gridUnit * 1.5
-                                Layout.preferredHeight: Kirigami.Units.gridUnit * 1.5
-                                Layout.alignment: Qt.AlignVCenter
-                                icon.name: "document-open"
-                                flat: true
-                                onClicked: composeMenu.popup()
-                                PlasmaComponents.ToolTip {
-                                    text: "Seleccionar Docker Compose"
-                                }
-                                PlasmaComponents.Menu {
-                                    id: composeMenu
-                                    Repeater {
-                                        model: projectItem.composeFileNames
-                                        PlasmaComponents.MenuItem {
-                                            text: modelData
-                                            checkable: true
-                                            checked: index === projectItem.selectedComposeIndex
-                                            onTriggered: {
-                                                if (projectItem.selectedComposeIndex !== index) {
-                                                    projectItem.selectedComposeIndex = index
-                                                    projectItem.isExpanded = false
-                                                    projectItem.isRunning  = false
-                                                    projectItem.checkStatus()
+                                                // OPEN (always)
+                                                Rectangle {
+                                                    Layout.preferredWidth: 64; Layout.preferredHeight: 22
+                                                    color: root.clrBtn; border.color: root.clrBorder; border.width: 1.5
+                                                    Text { anchors.centerIn: parent; text: "OPEN"; font.family: root.mono; font.pixelSize: 9; font.bold: true; color: root.clrText }
+                                                    HoverHandler { id: openHov }
+                                                    MouseArea {
+                                                        anchors.fill: parent
+                                                        onClicked: { root.openProject(projectPath, projectItem.currentEditor); root.expanded = false }
+                                                    }
+                                                    PlasmaComponents.ToolTip { text: "Abrir en editor"; visible: openHov.hovered }
+                                                }
+
+                                                // PULL
+                                                Rectangle {
+                                                    visible: dockerFiles.count > 0 && !projectItem.isLoading && !projectItem.isStarting
+                                                    Layout.preferredWidth: 58; Layout.preferredHeight: 22
+                                                    color: root.clrBtn; border.color: root.clrBorder; border.width: 1.5
+                                                    Text { anchors.centerIn: parent; text: "↓ PULL"; font.family: root.mono; font.pixelSize: 9; font.bold: true; color: root.clrText }
+                                                    HoverHandler { id: pullHov }
+                                                    MouseArea {
+                                                        anchors.fill: parent
+                                                        onClicked: executable.exec("konsole --workdir '" + projectPath + "' --hold -e sh -c \"" + projectItem.dockerComposeBase() + " pull\"")
+                                                    }
+                                                    PlasmaComponents.ToolTip { text: "Actualizar imágenes"; visible: pullHov.hovered }
+                                                }
+
+                                                Item { Layout.fillWidth: true }
+
+                                                // LAUNCH
+                                                Rectangle {
+                                                    visible: dockerFiles.count > 0 && !projectItem.isLoading && !projectItem.isRunning && !projectItem.isStarting
+                                                    Layout.preferredWidth: 84; Layout.preferredHeight: 22
+                                                    color: root.clrGreen; border.color: root.clrBorder; border.width: 2
+                                                    Text { anchors.centerIn: parent; text: "▶ LAUNCH"; font.family: root.mono; font.pixelSize: 9; font.bold: true; color: "#000000" }
+                                                    HoverHandler { id: launchHov }
+                                                    MouseArea {
+                                                        anchors.fill: parent
+                                                        onClicked: {
+                                                            projectItem.isRunning  = true
+                                                            projectItem.isStarting = true
+                                                            projectItem.isExpanded = true
+                                                            executable.exec("sh -c \"" + projectItem.dockerComposeBase() + " up -d\"")
+                                                            startupTimeoutTimer.restart()
+                                                            projectItem.fetchContainers()
+                                                        }
+                                                    }
+                                                    PlasmaComponents.ToolTip { text: "Iniciar Docker Compose"; visible: launchHov.hovered }
+                                                }
+
+                                                // STOP
+                                                Rectangle {
+                                                    visible: dockerFiles.count > 0 && !projectItem.isLoading && (projectItem.isRunning || projectItem.isStarting)
+                                                    Layout.preferredWidth: 72; Layout.preferredHeight: 22
+                                                    color: root.clrBtn; border.color: root.clrBorder; border.width: 2
+                                                    Text { anchors.centerIn: parent; text: "■ STOP"; font.family: root.mono; font.pixelSize: 9; font.bold: true; color: "#cc2200" }
+                                                    HoverHandler { id: stopHov }
+                                                    MouseArea {
+                                                        anchors.fill: parent
+                                                        onClicked: {
+                                                            projectItem.isStarting = false; projectItem.isLoading = true; projectItem.isExpanded = false
+                                                            startupTimeoutTimer.stop()
+                                                            downSource.connectSource("sh -c \"" + projectItem.dockerComposeBase() + " down\"")
+                                                        }
+                                                    }
+                                                    PlasmaComponents.ToolTip { text: "Detener Docker Compose"; visible: stopHov.hovered }
+                                                }
+
+                                                // DELETE
+                                                Rectangle {
+                                                    visible: fullRep.deleteEnabled
+                                                    Layout.preferredWidth: 58; Layout.preferredHeight: 22
+                                                    color: root.clrBtn; border.color: "#cc2200"; border.width: 1.5
+                                                    Text { anchors.centerIn: parent; text: "✕ DEL"; font.family: root.mono; font.pixelSize: 9; font.bold: true; color: "#cc2200" }
+                                                    HoverHandler { id: delHov }
+                                                    MouseArea { anchors.fill: parent; onClicked: root.removeProject(origIndex) }
+                                                    PlasmaComponents.ToolTip { text: "Eliminar proyecto"; visible: delHov.hovered }
                                                 }
                                             }
                                         }
                                     }
-                                }
-                            }
 
-                            // Editor selector
-                            PlasmaComponents.ToolButton {
-                                id: editorBtn
-                                visible: fullRep.editorSelectorEnabled
-                                Layout.preferredWidth:  Kirigami.Units.gridUnit * 1.5
-                                Layout.preferredHeight: Kirigami.Units.gridUnit * 1.5
-                                Layout.alignment: Qt.AlignVCenter
-                                flat: true
-                                icon.name: "document-edit"
-                                onClicked: editorMenu.popup()
-                                PlasmaComponents.ToolTip {
-                                    text: {
-                                        var opt = root.editorOptions.find(e => e.cmd === projectItem.currentEditor)
-                                        return "Editor: " + (opt ? opt.name : projectItem.currentEditor)
-                                    }
-                                }
-                                PlasmaComponents.Menu {
-                                    id: editorMenu
-                                    Repeater {
-                                        model: root.editorOptions
-                                        PlasmaComponents.MenuItem {
-                                            text: modelData.name
-                                            checkable: true
-                                            checked: projectItem.currentEditor === modelData.cmd
-                                            onTriggered: projectItem.setEditor(modelData.cmd)
-                                        }
-                                    }
-                                }
-                            }
-
-                            // Remove project
-                            PlasmaComponents.ToolButton {
-                                visible: fullRep.deleteEnabled
-                                Layout.preferredWidth:  Kirigami.Units.gridUnit * 1.5
-                                Layout.preferredHeight: Kirigami.Units.gridUnit * 1.5
-                                Layout.alignment: Qt.AlignVCenter
-                                icon.name: "list-remove"
-                                icon.color: Kirigami.Theme.negativeTextColor
-                                flat: true
-                                onClicked: root.removeProject(origIndex)
-                                PlasmaComponents.ToolTip { text: "Eliminar proyecto" }
-                            }
-                        }
-
-                        // ── Container tree ────────────────────────────────────
-                        Column {
-                            visible: projectItem.isExpanded && (projectItem.isRunning || projectItem.isStarting)
-                            width: parent.width
-
-                            PlasmaComponents.Label {
-                                visible: projectItem.isStarting && projectItem.containerList.length === 0
-                                width: parent.width
-                                leftPadding: Kirigami.Units.gridUnit * 1.5 + Kirigami.Units.smallSpacing
-                                topPadding: Kirigami.Units.smallSpacing
-                                bottomPadding: Kirigami.Units.smallSpacing
-                                text: "Iniciando servicios..."
-                                opacity: 0.6
-                                font.pixelSize: Kirigami.Units.gridUnit * 0.8
-                            }
-
-                            Repeater {
-                                model: projectItem.containerList
-
-                                delegate: RowLayout {
-                                    width: parent ? parent.width : 0
-                                    spacing: Kirigami.Units.smallSpacing
-
-                                    Item { Layout.preferredWidth: Kirigami.Units.gridUnit * 1.2 }
-
+                                    // ── SERVICES PANEL ────────────────────────
                                     Rectangle {
-                                        id: statusDot
-                                        width: 7; height: 7; radius: 4
-                                        Layout.alignment: Qt.AlignVCenter
+                                        visible: projectItem.isExpanded && (projectItem.isRunning || projectItem.isStarting)
+                                        width: parent.width
+                                        implicitHeight: visible ? servicesPanelCol.implicitHeight : 0
+                                        color: "#c8c8c8"
+                                        border.color: root.clrBorder; border.width: 1
 
-                                        property bool isSettled: modelData.state === "running" || modelData.state === "exited" || modelData.state === "dead"
-                                        property bool isPending: projectItem.isStarting && !isSettled
+                                        Column {
+                                            id: servicesPanelCol
+                                            width: parent.width
 
-                                        color: isPending
-                                            ? Kirigami.Theme.neutralTextColor
-                                            : modelData.state === "running"
-                                                ? Kirigami.Theme.positiveTextColor
-                                                : modelData.state === "exited" || modelData.state === "dead"
-                                                    ? Kirigami.Theme.negativeTextColor
-                                                    : Kirigami.Theme.textColor
+                                            // Panel header
+                                            Rectangle {
+                                                width: parent.width; height: 22; color: "#222222"
+                                                RowLayout {
+                                                    anchors.fill: parent; anchors.leftMargin: 10; anchors.rightMargin: 8
+                                                    Text {
+                                                        text: "SERVICES"
+                                                        font.family: root.mono; font.pixelSize: root.fzSmall; font.letterSpacing: 4; color: "#aaaaaa"
+                                                    }
+                                                    Item { Layout.fillWidth: true }
+                                                    Rectangle {
+                                                        Layout.preferredWidth: 32; Layout.preferredHeight: 14; color: root.clrGreen
+                                                        Text {
+                                                            anchors.centerIn: parent
+                                                            text: projectItem.containerList.length.toString().padStart(2, "0")
+                                                            font.family: root.mono; font.pixelSize: 8; font.bold: true; color: "#000"
+                                                        }
+                                                    }
+                                                }
+                                            }
 
-                                        opacity: isSettled ? 1.0 : isPending ? 1.0 : 0.5
+                                            // Starting placeholder
+                                            Item {
+                                                visible: projectItem.isStarting && projectItem.containerList.length === 0
+                                                width: parent.width; height: 34
+                                                Text {
+                                                    anchors.centerIn: parent
+                                                    text: "◌  STARTING SERVICES..."
+                                                    font.family: root.mono; font.pixelSize: 8; font.letterSpacing: 2; color: root.clrMuted
+                                                }
+                                            }
 
-                                        SequentialAnimation on opacity {
-                                            running: statusDot.isPending
-                                            loops: Animation.Infinite
-                                            NumberAnimation { to: 0.2; duration: 500; easing.type: Easing.InOutSine }
-                                            NumberAnimation { to: 1.0; duration: 500; easing.type: Easing.InOutSine }
+                                            // Container rows
+                                            Repeater {
+                                                model: projectItem.containerList
+                                                delegate: Column {
+                                                    width: parent ? parent.width : 0
+
+                                                    property var   svc:       modelData
+                                                    property bool  isSettled: modelData.state === "running" || modelData.state === "exited" || modelData.state === "dead"
+                                                    property bool  isPending: projectItem.isStarting && !isSettled
+                                                    property string port:     root.extractFirstPort(modelData.ports)
+
+                                                    Rectangle { width: parent.width; height: 1; color: "#aaaaaa" }
+
+                                                    Item {
+                                                        width: parent.width; height: 30
+
+                                                        RowLayout {
+                                                            anchors.fill: parent; anchors.leftMargin: 10; anchors.rightMargin: 8
+                                                            spacing: 8
+
+                                                            // Status square
+                                                            Rectangle {
+                                                                Layout.preferredWidth: 8; Layout.preferredHeight: 8
+                                                                color: isPending ? root.clrMuted :
+                                                                       modelData.state === "running" ? root.clrGreen : "#cc2200"
+                                                                border.color: root.clrBorder; border.width: 1
+                                                                SequentialAnimation on opacity {
+                                                                    running: isPending; loops: Animation.Infinite
+                                                                    NumberAnimation { to: 0.2; duration: 500 }
+                                                                    NumberAnimation { to: 1.0; duration: 500 }
+                                                                }
+                                                            }
+
+                                                            // Name
+                                                            Text {
+                                                                Layout.preferredWidth: 90
+                                                                text: modelData.service
+                                                                font.family: root.mono; font.pixelSize: 9; font.bold: true; font.letterSpacing: 1
+                                                                color: root.clrText; elide: Text.ElideRight
+                                                                opacity: isPending ? 0.5 : 1.0
+                                                            }
+
+                                                            // State
+                                                            Text {
+                                                                Layout.preferredWidth: 58
+                                                                text: modelData.state.toUpperCase()
+                                                                font.family: root.mono; font.pixelSize: root.fzTiny; font.letterSpacing: 1
+                                                                color: modelData.state === "running" ? root.clrText : root.clrMuted
+                                                            }
+
+                                                            // Port badge
+                                                            Rectangle {
+                                                                visible: port.length > 0
+                                                                implicitWidth: pTxt.implicitWidth + 12; implicitHeight: 14
+                                                                color: root.clrGreen; border.color: root.clrBorder; border.width: 1
+                                                                Text { id: pTxt; anchors.centerIn: parent; text: ":" + port; font.family: root.mono; font.pixelSize: root.fzTiny; font.bold: true; color: "#000" }
+                                                            }
+
+                                                            Item { Layout.fillWidth: true }
+
+                                                            // Service action buttons
+                                                            Row {
+                                                                spacing: 3
+                                                                visible: !isPending
+
+                                                                Repeater {
+                                                                    model: [
+                                                                        { t: "LOG", w: 32, tip: "Ver logs",         show: true },
+                                                                        { t: "↺",   w: 22, tip: "Reiniciar",        show: true },
+                                                                        { t: "SH",  w: 24, tip: "Abrir terminal",   show: modelData.state === "running" },
+                                                                        { t: "BLD", w: 32, tip: "Construir imagen", show: true }
+                                                                    ]
+                                                                    delegate: Rectangle {
+                                                                        visible: modelData.show
+                                                                        width: modelData.w; height: 18
+                                                                        color: root.clrBtn; border.color: root.clrBorder; border.width: 1
+                                                                        Text { anchors.centerIn: parent; text: modelData.t; font.family: root.mono; font.pixelSize: root.fzSmall; font.bold: true; color: root.clrText }
+                                                                        HoverHandler { id: svcBtnHov }
+                                                                        MouseArea {
+                                                                            anchors.fill: parent
+                                                                            onClicked: {
+                                                                                var base = projectItem.dockerComposeBase()
+                                                                                var name = svc.service
+                                                                                if (modelData.t === "LOG") executable.exec("konsole --workdir '" + projectPath + "' --hold -e sh -c \"" + base + " logs -f " + name + "\"")
+                                                                                else if (modelData.t === "↺") { projectItem.isLoading = true; executable.exec("sh -c \"" + base + " restart " + name + "\"") }
+                                                                                else if (modelData.t === "SH")  executable.exec("konsole --workdir '" + projectPath + "' -e sh -c \"" + base + " exec " + name + " sh\"")
+                                                                                else if (modelData.t === "BLD") executable.exec("konsole --workdir '" + projectPath + "' --hold -e sh -c \"" + base + " build " + name + "\"")
+                                                                            }
+                                                                        }
+                                                                        PlasmaComponents.ToolTip { text: modelData.tip; visible: svcBtnHov.hovered }
+                                                                    }
+                                                                }
+
+                                                                // Browser button
+                                                                Rectangle {
+                                                                    visible: svc.state === "running" && svc.ports.length > 0
+                                                                    width: 22; height: 18
+                                                                    color: root.clrGreen; border.color: root.clrBorder; border.width: 1
+                                                                    Text { anchors.centerIn: parent; text: "🌐"; font.pixelSize: 9 }
+                                                                    HoverHandler { id: webHov }
+                                                                    MouseArea {
+                                                                        anchors.fill: parent
+                                                                        onClicked: {
+                                                                            var m = /:(\d+)->/.exec(svc.ports)
+                                                                            if (m) Qt.openUrlExternally("http://localhost:" + m[1])
+                                                                        }
+                                                                    }
+                                                                    PlasmaComponents.ToolTip { text: "Abrir en navegador"; visible: webHov.hovered }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+
+                                            // Panel footer
+                                            Rectangle {
+                                                width: parent.width; height: 18; color: "#bbbbbb"
+                                                border.color: "#aaaaaa"; border.width: 1
+                                                Text {
+                                                    anchors.centerIn: parent
+                                                    text: "COMPOSE: " + (projectItem.composeFileNames.length > 0 ? projectItem.composeFileNames[projectItem.selectedComposeIndex] : "—")
+                                                    font.family: root.mono; font.pixelSize: root.fzTiny; font.letterSpacing: 2; color: root.clrSub
+                                                }
+                                            }
                                         }
                                     }
 
-                                    PlasmaComponents.Label {
-                                        text: modelData.service
-                                        Layout.fillWidth: true
-                                        elide: Text.ElideRight
-                                        opacity: statusDot.isPending ? 0.6 : 1.0
-                                        Behavior on opacity { NumberAnimation { duration: 200 } }
-                                    }
-
-                                    PlasmaComponents.Label {
-                                        text: root.extractFirstPort(modelData.ports)
-                                        visible: text.length > 0
-                                        opacity: 0.6
-                                        font.pixelSize: Kirigami.Units.gridUnit * 0.7
-                                        Layout.alignment: Qt.AlignVCenter
-                                    }
-
-                                    PlasmaComponents.ToolButton {
-                                        Layout.preferredWidth:  Kirigami.Units.gridUnit * 1.4
-                                        Layout.preferredHeight: Kirigami.Units.gridUnit * 1.4
-                                        icon.name: "utilities-terminal"
-                                        flat: true
-                                        visible: !statusDot.isPending
-                                        onClicked: executable.exec("konsole --workdir '" + projectPath + "' --hold -e sh -c \"" + projectItem.dockerComposeBase() + " logs -f " + modelData.service + "\"")
-                                        PlasmaComponents.ToolTip { text: "Ver logs" }
-                                    }
-
-                                    PlasmaComponents.ToolButton {
-                                        Layout.preferredWidth:  Kirigami.Units.gridUnit * 1.4
-                                        Layout.preferredHeight: Kirigami.Units.gridUnit * 1.4
-                                        icon.name: "system-reboot"
-                                        flat: true
-                                        visible: !statusDot.isPending
-                                        onClicked: {
-                                            projectItem.isLoading = true
-                                            executable.exec("sh -c \"" + projectItem.dockerComposeBase() + " restart " + modelData.service + "\"")
-                                        }
-                                        PlasmaComponents.ToolTip { text: "Reiniciar" }
-                                    }
-
-                                    PlasmaComponents.ToolButton {
-                                        Layout.preferredWidth:  Kirigami.Units.gridUnit * 1.4
-                                        Layout.preferredHeight: Kirigami.Units.gridUnit * 1.4
-                                        icon.name: "run-build"
-                                        flat: true
-                                        visible: !statusDot.isPending
-                                        onClicked: executable.exec("konsole --workdir '" + projectPath + "' --hold -e sh -c \"" + projectItem.dockerComposeBase() + " build " + modelData.service + "\"")
-                                        PlasmaComponents.ToolTip { text: "Construir imagen" }
-                                    }
-
-                                    PlasmaComponents.ToolButton {
-                                        Layout.preferredWidth:  Kirigami.Units.gridUnit * 1.4
-                                        Layout.preferredHeight: Kirigami.Units.gridUnit * 1.4
-                                        icon.name: "application-x-shellscript"
-                                        flat: true
-                                        visible: !statusDot.isPending && modelData.state === "running"
-                                        onClicked: executable.exec("konsole --workdir '" + projectPath + "' -e sh -c \"" + projectItem.dockerComposeBase() + " exec " + modelData.service + " sh\"")
-                                        PlasmaComponents.ToolTip { text: "Abrir terminal" }
-                                    }
-
-                                    PlasmaComponents.ToolButton {
-                                        Layout.preferredWidth:  Kirigami.Units.gridUnit * 1.4
-                                        Layout.preferredHeight: Kirigami.Units.gridUnit * 1.4
-                                        icon.name: "internet-web-browser"
-                                        flat: true
-                                        visible: !statusDot.isPending && modelData.state === "running" && modelData.ports.length > 0
-                                        onClicked: {
-                                            var m = /:(\d+)->/.exec(modelData.ports)
-                                            if (m) Qt.openUrlExternally("http://localhost:" + m[1])
-                                        }
-                                        PlasmaComponents.ToolTip { text: "Abrir en navegador" }
-                                    }
+                                    Item { width: 1; height: 4 }
                                 }
                             }
 
-                            Item { width: 1; height: Kirigami.Units.smallSpacing }
+                            // Drop indicator bottom
+                            Rectangle {
+                                visible: fullRep.dragEnabled && fullRep.draggedIndex !== -1 &&
+                                         fullRep.dropTargetIndex === Plasmoid.configuration.projects.length &&
+                                         origIndex === Plasmoid.configuration.projects.length - 1
+                                width: parent.width; height: 3; color: root.clrGreen
+                            }
                         }
+                    }
+                }
+            }
 
-                        Kirigami.Separator { width: parent.width; opacity: 0.3 }
+            // ── FOOTER ──────────────────────────────────────────────────────
+            Rectangle {
+                Layout.fillWidth: true
+                height: 28; color: "#c8c8c8"
 
-                        // Drop indicator bottom (after last item)
-                        Rectangle {
-                            visible: fullRep.dragEnabled &&
-                                     fullRep.draggedIndex !== -1 &&
-                                     fullRep.dropTargetIndex === Plasmoid.configuration.projects.length &&
-                                     origIndex === Plasmoid.configuration.projects.length - 1
-                            width: parent.width
-                            height: 2
-                            color: Kirigami.Theme.highlightColor
+                Rectangle { anchors.top: parent.top; width: parent.width; height: 2; color: root.clrBorder }
+
+                RowLayout {
+                    anchors.fill: parent; anchors.leftMargin: 10; anchors.rightMargin: 10; spacing: 8
+
+                    Row {
+                        spacing: 0
+                        property var bars: [1,3,1,2,4,1,2,1,3,2,1,4,1,2]
+                        Repeater {
+                            model: parent.bars.length
+                            Rectangle { width: parent.parent.bars[index]; height: 16; color: index % 2 === 0 ? root.clrBorder : "transparent" }
+                        }
+                    }
+
+                    Column {
+                        spacing: 2
+                        Text { text: "KDE::PLASMA PROJECT LAUNCHER"; font.family: root.mono; font.pixelSize: root.fzTiny; font.letterSpacing: 2; color: root.clrSub }
+                        Text { text: "1 094-72-601  //  v2.0"; font.family: root.mono; font.pixelSize: root.fzTiny; font.letterSpacing: 1; color: root.clrMuted }
+                    }
+
+                    Item { Layout.fillWidth: true }
+
+                    Row {
+                        spacing: 0
+                        property var bars: [2,1,3,1,2,4,1,2,1,3,1,2,1,3]
+                        Repeater {
+                            model: parent.bars.length
+                            Rectangle { width: parent.parent.bars[index]; height: 16; color: index % 2 === 0 ? root.clrBorder : "transparent" }
                         }
                     }
                 }
             }
         }
+
+        // Running/offline counts — computed from repeater items
+        property string runningCountLabel: "—"
+        property string offlineCountLabel: "—"
     }
 }

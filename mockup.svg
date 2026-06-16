@@ -1,0 +1,317 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="440" height="740" viewBox="0 0 440 740">
+  <defs>
+    <style>
+      text { font-family: 'Courier New', 'Liberation Mono', monospace; }
+    </style>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2.5" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- ═══ BACKGROUND ═══ -->
+  <rect width="440" height="740" fill="#c0c0c0"/>
+
+  <!-- ═══ OUTER BORDER (double) ═══ -->
+  <rect x="6"  y="6"  width="428" height="728" fill="none" stroke="#111" stroke-width="3"/>
+  <rect x="11" y="11" width="418" height="718" fill="none" stroke="#111" stroke-width="1"/>
+
+  <!-- ═══ HEADER ═══ -->
+  <rect x="6" y="6" width="428" height="70" fill="#d8d8d8" stroke="#111" stroke-width="1"/>
+
+  <!-- Barcode header left -->
+  <rect x="18" y="16" width="2"  height="28" fill="#111"/>
+  <rect x="21" y="16" width="4"  height="28" fill="#111"/>
+  <rect x="26" y="16" width="2"  height="28" fill="#111"/>
+  <rect x="29" y="16" width="1"  height="28" fill="#111"/>
+  <rect x="31" y="16" width="3"  height="28" fill="#111"/>
+  <rect x="35" y="16" width="2"  height="28" fill="#111"/>
+  <rect x="38" y="16" width="4"  height="28" fill="#111"/>
+  <rect x="43" y="16" width="1"  height="28" fill="#111"/>
+  <rect x="45" y="16" width="3"  height="28" fill="#111"/>
+  <rect x="49" y="16" width="2"  height="28" fill="#111"/>
+  <rect x="52" y="16" width="1"  height="28" fill="#111"/>
+  <text x="18" y="58" fill="#111" font-size="7" letter-spacing="1">1 04-52-900</text>
+
+  <!-- Title -->
+  <text x="72" y="34" fill="#111" font-size="17" letter-spacing="3" font-weight="bold">DEV PROJECTS</text>
+  <text x="72" y="52" fill="#111" font-size="8"  letter-spacing="2">PLASMA WIDGET  //  PROJECT LAUNCHER</text>
+
+  <!-- Stats right side -->
+  <line x1="292" y1="14" x2="292" y2="68" stroke="#111" stroke-width="1"/>
+
+  <text x="300" y="28" fill="#555" font-size="7"  letter-spacing="1">TOTAL</text>
+  <text x="300" y="46" fill="#111" font-size="16" font-weight="bold" letter-spacing="2">03</text>
+
+  <line x1="338" y1="14" x2="338" y2="68" stroke="#111" stroke-width="1"/>
+
+  <text x="346" y="28" fill="#555" font-size="7"  letter-spacing="1">RUNNING</text>
+  <rect  x="346" y="32" width="42" height="14" fill="#00ff00"/>
+  <text x="350" y="44" fill="#000" font-size="10" font-weight="bold" letter-spacing="1">01</text>
+
+  <line x1="396" y1="14" x2="396" y2="68" stroke="#111" stroke-width="1"/>
+
+  <text x="404" y="28" fill="#555" font-size="7"  letter-spacing="1">OFF</text>
+  <text x="404" y="46" fill="#555" font-size="16" font-weight="bold" letter-spacing="2">02</text>
+
+  <!-- ── Toolbar ── -->
+  <rect x="6" y="76" width="428" height="28" fill="#cacaca" stroke="#111" stroke-width="1"/>
+
+  <!-- Search btn -->
+  <rect x="14" y="82" width="52" height="16" fill="#b8b8b8" stroke="#111" stroke-width="1.5"/>
+  <text x="19" y="94" fill="#111" font-size="9" letter-spacing="1" font-weight="bold">⌕ SRCH</text>
+
+  <!-- Reorder btn -->
+  <rect x="70" y="82" width="52" height="16" fill="#b8b8b8" stroke="#111" stroke-width="1.5"/>
+  <text x="74" y="94" fill="#111" font-size="9" letter-spacing="1" font-weight="bold">⇅ MOVE</text>
+
+  <!-- Editor btn -->
+  <rect x="126" y="82" width="52" height="16" fill="#b8b8b8" stroke="#111" stroke-width="1.5"/>
+  <text x="130" y="94" fill="#111" font-size="9" letter-spacing="1" font-weight="bold">✎ EDIT</text>
+
+  <!-- Delete btn -->
+  <rect x="182" y="82" width="52" height="16" fill="#b8b8b8" stroke="#111" stroke-width="1.5"/>
+  <text x="186" y="94" fill="#111" font-size="9" letter-spacing="1" font-weight="bold">✕ DEL</text>
+
+  <!-- ADD btn (highlighted) -->
+  <rect x="370" y="80" width="58" height="20" fill="#00ff00" stroke="#111" stroke-width="2"/>
+  <text x="378" y="94" fill="#000" font-size="10" letter-spacing="1" font-weight="bold">+ ADD</text>
+
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- PROJECT CARD 1 — my-app — OFFLINE                  -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <rect x="12" y="112" width="416" height="98" fill="#d4d4d4" stroke="#111" stroke-width="2"/>
+
+  <!-- Card header -->
+  <rect x="12" y="112" width="416" height="24" fill="#111"/>
+
+  <!-- barcode in header -->
+  <rect x="20" y="116" width="1"  height="16" fill="#555"/>
+  <rect x="22" y="116" width="3"  height="16" fill="#555"/>
+  <rect x="26" y="116" width="1"  height="16" fill="#555"/>
+  <rect x="28" y="116" width="2"  height="16" fill="#555"/>
+  <rect x="31" y="116" width="4"  height="16" fill="#555"/>
+  <rect x="36" y="116" width="1"  height="16" fill="#555"/>
+  <rect x="38" y="116" width="2"  height="16" fill="#555"/>
+
+  <text x="48"  y="129" fill="#aaa" font-size="7"  letter-spacing="2">PROJECT_ID</text>
+  <text x="118" y="129" fill="#fff" font-size="10" letter-spacing="2" font-weight="bold">MY-APP</text>
+
+  <!-- Offline badge -->
+  <rect x="330" y="116" width="88" height="16" fill="#444" stroke="#666" stroke-width="1"/>
+  <text x="340" y="128" fill="#888" font-size="8" letter-spacing="2">● OFFLINE</text>
+
+  <!-- Card body -->
+  <text x="22" y="150" fill="#555" font-size="7" letter-spacing="2">PATH</text>
+  <text x="60" y="150" fill="#222" font-size="8">~/Code/my-app</text>
+
+  <text x="22" y="166" fill="#555" font-size="7" letter-spacing="2">STATUS</text>
+  <!-- empty bar -->
+  <rect x="62" y="158" width="160" height="10" fill="#aaa" stroke="#888" stroke-width="1"/>
+  <rect x="63" y="159" width="12"  height="8"  fill="#888"/>
+  <text x="232" y="167" fill="#888" font-size="7" letter-spacing="1">OFFLINE</text>
+
+  <text x="22" y="182" fill="#555" font-size="7" letter-spacing="2">EDITOR</text>
+  <text x="65" y="182" fill="#444" font-size="8">code --new-window</text>
+
+  <!-- Action buttons -->
+  <rect x="278" y="156" width="68" height="20" fill="#c0c0c0" stroke="#111" stroke-width="1.5"/>
+  <text x="290" y="170" fill="#111" font-size="9" font-weight="bold">OPEN</text>
+
+  <rect x="352" y="156" width="68" height="20" fill="#00ff00" stroke="#111" stroke-width="2"/>
+  <text x="358" y="170" fill="#000" font-size="9" font-weight="bold">▶ LAUNCH</text>
+
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- PROJECT CARD 2 — backend — RUNNING + EXPANDED      -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <rect x="12" y="218" width="416" height="268" fill="#d4d4d4" stroke="#111" stroke-width="2"/>
+  <!-- running = green left border accent -->
+  <rect x="12" y="218" width="6" height="268" fill="#00ff00"/>
+
+  <!-- Card header -->
+  <rect x="12" y="218" width="416" height="24" fill="#111"/>
+
+  <rect x="22" y="222" width="1"  height="16" fill="#00ff00" opacity="0.6"/>
+  <rect x="24" y="222" width="3"  height="16" fill="#00ff00" opacity="0.6"/>
+  <rect x="28" y="222" width="2"  height="16" fill="#00ff00" opacity="0.6"/>
+  <rect x="31" y="222" width="1"  height="16" fill="#00ff00" opacity="0.6"/>
+  <rect x="33" y="222" width="4"  height="16" fill="#00ff00" opacity="0.6"/>
+  <rect x="38" y="222" width="2"  height="16" fill="#00ff00" opacity="0.6"/>
+  <rect x="41" y="222" width="1"  height="16" fill="#00ff00" opacity="0.6"/>
+
+  <text x="50"  y="235" fill="#aaa" font-size="7"  letter-spacing="2">PROJECT_ID</text>
+  <text x="120" y="235" fill="#fff" font-size="10" letter-spacing="2" font-weight="bold">BACKEND</text>
+
+  <!-- Running badge -->
+  <rect x="298" y="220" width="122" height="18" fill="#00ff00" stroke="#111" stroke-width="1"/>
+  <text x="307" y="233" fill="#000" font-size="9" letter-spacing="2" font-weight="bold">■ RUNNING</text>
+
+  <!-- expand toggle -->
+  <text x="420" y="234" fill="#aaa" font-size="10">▼</text>
+
+  <!-- Body -->
+  <text x="22" y="258" fill="#555" font-size="7" letter-spacing="2">PATH</text>
+  <text x="60" y="258" fill="#222" font-size="8">~/Code/backend</text>
+
+  <text x="22" y="274" fill="#555" font-size="7" letter-spacing="2">STATUS</text>
+  <!-- full bar -->
+  <rect x="62" y="266" width="160" height="10" fill="#111" stroke="#111" stroke-width="1"/>
+  <rect x="63" y="267" width="157" height="8"  fill="#00ff00"/>
+  <text x="232" y="274" fill="#111" font-size="7" letter-spacing="1" font-weight="bold">RUNNING</text>
+
+  <text x="22" y="290" fill="#555" font-size="7" letter-spacing="2">FILE</text>
+  <text x="60" y="290" fill="#444" font-size="8">compose.yml</text>
+
+  <!-- ── SERVICES PANEL ── -->
+  <rect x="20" y="298" width="408" height="154" fill="#c8c8c8" stroke="#111" stroke-width="1.5"/>
+  <rect x="20" y="298" width="408" height="20"  fill="#222"/>
+  <text x="30"  y="313" fill="#aaa" font-size="7" letter-spacing="4">SERVICES</text>
+  <rect x="390" y="302" width="30" height="14" fill="#00ff00"/>
+  <text x="396" y="313" fill="#000" font-size="8" font-weight="bold" letter-spacing="1">03</text>
+
+  <!-- service row 1 -->
+  <rect x="20" y="318" width="408" height="1" fill="#aaa"/>
+  <rect x="28" y="328" width="8" height="8" fill="#00ff00" stroke="#111" stroke-width="1"/>
+  <text x="44"  y="336" fill="#111" font-size="9" font-weight="bold" letter-spacing="1">api</text>
+  <text x="110" y="336" fill="#111" font-size="8" letter-spacing="1">RUNNING</text>
+  <rect x="185" y="326" width="42" height="14" fill="#00ff00" stroke="#111" stroke-width="1"/>
+  <text x="191" y="337" fill="#000" font-size="8" font-weight="bold">:3000</text>
+  <!-- btns -->
+  <rect x="240" y="325" width="30" height="16" fill="#b8b8b8" stroke="#111" stroke-width="1"/>
+  <text x="246" y="337" fill="#111" font-size="8" font-weight="bold">LOG</text>
+  <rect x="274" y="325" width="24" height="16" fill="#b8b8b8" stroke="#111" stroke-width="1"/>
+  <text x="280" y="337" fill="#111" font-size="9">↺</text>
+  <rect x="302" y="325" width="24" height="16" fill="#b8b8b8" stroke="#111" stroke-width="1"/>
+  <text x="308" y="337" fill="#111" font-size="8" font-weight="bold">SH</text>
+  <rect x="330" y="325" width="30" height="16" fill="#b8b8b8" stroke="#111" stroke-width="1"/>
+  <text x="334" y="337" fill="#111" font-size="8" font-weight="bold">BLD</text>
+  <rect x="364" y="325" width="56" height="16" fill="#00ff00" stroke="#111" stroke-width="1"/>
+  <text x="370" y="337" fill="#000" font-size="8" font-weight="bold">🌐 :3000</text>
+
+  <!-- service row 2 -->
+  <rect x="20" y="344" width="408" height="1" fill="#aaa"/>
+  <rect x="28" y="354" width="8" height="8" fill="#00ff00" stroke="#111" stroke-width="1"/>
+  <text x="44"  y="362" fill="#111" font-size="9" font-weight="bold" letter-spacing="1">db</text>
+  <text x="110" y="362" fill="#111" font-size="8" letter-spacing="1">RUNNING</text>
+  <rect x="185" y="352" width="42" height="14" fill="#00ff00" stroke="#111" stroke-width="1"/>
+  <text x="191" y="363" fill="#000" font-size="8" font-weight="bold">:5432</text>
+  <rect x="240" y="351" width="30" height="16" fill="#b8b8b8" stroke="#111" stroke-width="1"/>
+  <text x="246" y="363" fill="#111" font-size="8" font-weight="bold">LOG</text>
+  <rect x="274" y="351" width="24" height="16" fill="#b8b8b8" stroke="#111" stroke-width="1"/>
+  <text x="280" y="363" fill="#111" font-size="9">↺</text>
+  <rect x="302" y="351" width="24" height="16" fill="#b8b8b8" stroke="#111" stroke-width="1"/>
+  <text x="308" y="363" fill="#111" font-size="8" font-weight="bold">SH</text>
+  <rect x="330" y="351" width="30" height="16" fill="#b8b8b8" stroke="#111" stroke-width="1"/>
+  <text x="334" y="363" fill="#111" font-size="8" font-weight="bold">BLD</text>
+
+  <!-- service row 3 -->
+  <rect x="20" y="370" width="408" height="1" fill="#aaa"/>
+  <rect x="28" y="380" width="8" height="8" fill="#00ff00" stroke="#111" stroke-width="1"/>
+  <text x="44"  y="388" fill="#111" font-size="9" font-weight="bold" letter-spacing="1">redis</text>
+  <text x="110" y="388" fill="#111" font-size="8" letter-spacing="1">RUNNING</text>
+  <rect x="185" y="378" width="42" height="14" fill="#00ff00" stroke="#111" stroke-width="1"/>
+  <text x="191" y="389" fill="#000" font-size="8" font-weight="bold">:6379</text>
+  <rect x="240" y="377" width="30" height="16" fill="#b8b8b8" stroke="#111" stroke-width="1"/>
+  <text x="246" y="389" fill="#111" font-size="8" font-weight="bold">LOG</text>
+  <rect x="274" y="377" width="24" height="16" fill="#b8b8b8" stroke="#111" stroke-width="1"/>
+  <text x="280" y="389" fill="#111" font-size="9">↺</text>
+  <rect x="302" y="377" width="24" height="16" fill="#b8b8b8" stroke="#111" stroke-width="1"/>
+  <text x="308" y="389" fill="#111" font-size="8" font-weight="bold">SH</text>
+  <rect x="330" y="377" width="30" height="16" fill="#b8b8b8" stroke="#111" stroke-width="1"/>
+  <text x="334" y="389" fill="#111" font-size="8" font-weight="bold">BLD</text>
+
+  <!-- service panel bottom bar -->
+  <rect x="20" y="396" width="408" height="20" fill="#bbb" stroke="#111" stroke-width="1"/>
+  <text x="30" y="410" fill="#555" font-size="7" letter-spacing="3">ANC STATUS: ACTIVE  ──  COMPOSE: compose.yml</text>
+
+  <!-- Card actions -->
+  <rect x="278" y="462" width="68" height="20" fill="#c0c0c0" stroke="#111" stroke-width="1.5"/>
+  <text x="290" y="476" fill="#111" font-size="9" font-weight="bold">OPEN</text>
+
+  <rect x="352" y="462" width="68" height="20" fill="#ddd" stroke="#111" stroke-width="2"/>
+  <text x="357" y="476" fill="#cc2200" font-size="9" font-weight="bold">■ STOP</text>
+
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- PROJECT CARD 3 — frontend — OFFLINE                -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <rect x="12" y="494" width="416" height="88" fill="#d4d4d4" stroke="#111" stroke-width="2"/>
+
+  <rect x="12" y="494" width="416" height="24" fill="#111"/>
+
+  <rect x="22" y="498" width="2"  height="16" fill="#555"/>
+  <rect x="25" y="498" width="4"  height="16" fill="#555"/>
+  <rect x="30" y="498" width="1"  height="16" fill="#555"/>
+  <rect x="32" y="498" width="3"  height="16" fill="#555"/>
+  <rect x="36" y="498" width="2"  height="16" fill="#555"/>
+  <rect x="39" y="498" width="1"  height="16" fill="#555"/>
+
+  <text x="50"  y="511" fill="#aaa" font-size="7"  letter-spacing="2">PROJECT_ID</text>
+  <text x="120" y="511" fill="#fff" font-size="10" letter-spacing="2" font-weight="bold">FRONTEND</text>
+
+  <rect x="330" y="496" width="88" height="16" fill="#444" stroke="#666" stroke-width="1"/>
+  <text x="340" y="508" fill="#888" font-size="8" letter-spacing="2">● OFFLINE</text>
+
+  <text x="22" y="532" fill="#555" font-size="7" letter-spacing="2">PATH</text>
+  <text x="60" y="532" fill="#222" font-size="8">~/Code/frontend</text>
+
+  <text x="22" y="548" fill="#555" font-size="7" letter-spacing="2">STATUS</text>
+  <rect x="62" y="540" width="160" height="10" fill="#aaa" stroke="#888" stroke-width="1"/>
+  <rect x="63" y="541" width="12"  height="8"  fill="#888"/>
+  <text x="232" y="549" fill="#888" font-size="7" letter-spacing="1">OFFLINE</text>
+
+  <rect x="278" y="538" width="68" height="20" fill="#c0c0c0" stroke="#111" stroke-width="1.5"/>
+  <text x="290" y="552" fill="#111" font-size="9" font-weight="bold">OPEN</text>
+
+  <rect x="352" y="538" width="68" height="20" fill="#00ff00" stroke="#111" stroke-width="2"/>
+  <text x="358" y="552" fill="#000" font-size="9" font-weight="bold">▶ LAUNCH</text>
+
+  <!-- No docker file note -->
+  <text x="22" y="574" fill="#aaa" font-size="7" letter-spacing="2">NO COMPOSE FILE DETECTED</text>
+
+
+  <!-- ═══ FOOTER ═══ -->
+  <rect x="6" y="696" width="428" height="38" fill="#c8c8c8" stroke="#111" stroke-width="1"/>
+  <rect x="6" y="696" width="428" height="3" fill="#111"/>
+
+  <!-- footer barcodes -->
+  <rect x="16" y="704" width="1" height="20" fill="#111"/>
+  <rect x="18" y="704" width="3" height="20" fill="#111"/>
+  <rect x="22" y="704" width="1" height="20" fill="#111"/>
+  <rect x="24" y="704" width="2" height="20" fill="#111"/>
+  <rect x="27" y="704" width="4" height="20" fill="#111"/>
+  <rect x="32" y="704" width="1" height="20" fill="#111"/>
+  <rect x="34" y="704" width="2" height="20" fill="#111"/>
+  <rect x="37" y="704" width="3" height="20" fill="#111"/>
+  <rect x="41" y="704" width="1" height="20" fill="#111"/>
+  <rect x="43" y="704" width="2" height="20" fill="#111"/>
+  <rect x="46" y="704" width="1" height="20" fill="#111"/>
+
+  <text x="56"  y="716" fill="#333" font-size="7" letter-spacing="2">KDE::PLASMA PROJECT LAUNCHER</text>
+  <text x="56"  y="727" fill="#888" font-size="6" letter-spacing="1">1 094-72-601  //  v2.0  //  SID5 W3-419S</text>
+
+  <!-- ANC / FREQ data block -->
+  <line x1="290" y1="699" x2="290" y2="732" stroke="#111" stroke-width="1"/>
+  <text x="298" y="710" fill="#555" font-size="6" letter-spacing="1">ANC STATUS: 4.8%</text>
+  <rect  x="382" y="703" width="24" height="7" fill="#00ff00"/>
+  <text x="298" y="722" fill="#555" font-size="6" letter-spacing="1">FREQ.t:  20:2000Hz</text>
+  <rect  x="382" y="716" width="36" height="7" fill="#111"/>
+
+  <!-- right footer barcodes -->
+  <rect x="390" y="704" width="1" height="20" fill="#111"/>
+  <rect x="392" y="704" width="2" height="20" fill="#111"/>
+  <rect x="395" y="704" width="4" height="20" fill="#111"/>
+  <rect x="400" y="704" width="1" height="20" fill="#111"/>
+  <rect x="402" y="704" width="3" height="20" fill="#111"/>
+  <rect x="406" y="704" width="2" height="20" fill="#111"/>
+  <rect x="409" y="704" width="1" height="20" fill="#111"/>
+  <rect x="411" y="704" width="3" height="20" fill="#111"/>
+  <rect x="415" y="704" width="1" height="20" fill="#111"/>
+  <rect x="417" y="704" width="2" height="20" fill="#111"/>
+  <rect x="420" y="704" width="4" height="20" fill="#111"/>
+  <rect x="425" y="704" width="1" height="20" fill="#111"/>
+  <rect x="427" y="704" width="3" height="20" fill="#111"/>
+
+</svg>

@@ -1,58 +1,69 @@
 # Code Projects — KDE Plasma Widget
 
-A KDE Plasma 6 panel widget to quickly open your code projects in any editor.
+A KDE Plasma 6 panel widget to quickly open your code projects in any editor, with Docker Compose integration and a custom HUD-style interface.
 
 ![KDE Plasma 6](https://img.shields.io/badge/KDE_Plasma-6-blue?logo=kde)
 ![QML](https://img.shields.io/badge/QML-Qt_6-green?logo=qt)
 ![License](https://img.shields.io/badge/license-MIT-lightgrey)
 
+## Design
+
+Industrial HUD aesthetic: gray background (`#c0c0c0`), thick black borders, monospace font, and neon green (`#00ff00`) used exclusively for active/running state — status bars, badges, port labels, and the `▶ LAUNCH` button. Each project is displayed as a scan card with a barcode decoration, a `PROJECT_ID` header, and a live status bar that fills green when Docker is running.
+
 ## Features
 
-- Add any folder as a project with the **+** button (native KDE folder picker)
-- Click a project name to open it in the **configured editor** for that project
-- **Per-project editor selector** — each project has an independent editor choice; the project icon reflects the active editor
-- **Editor management** — configure the global editor list from the widget settings (right-click → Configure); add, edit, or delete editors with name, command, and icon (native KDE icon picker with search)
-- **Search/filter** — toggle with the search button in the header; filters by project name, clears on Escape
-- **Drag to reorder** — enable with the move button in the header; grab the dot handle on the left and drag to a new position; highlight line shows the drop target
-- **Editor selector** — enable with the editor button in the header; reveals the per-project editor picker on each row
-- **Delete mode** — enable with the delete button in the header; reveals the remove button on each row
-- Remove projects from the list with the **−** button (delete mode must be active)
+- Add any folder as a project with **+ ADD** (native KDE folder picker)
+- Click the black header bar of any card to open it in the configured editor
+- **Per-project editor selector** — toggle with `✎ EDIT`; each project independently tracks its editor
+- **Editor management** — configure the global editor list from widget settings (right-click → Configure)
+- **Search/filter** — toggle `⌕ SRCH`; filters by project name, Escape to clear
+- **Drag to reorder** — toggle `⇅ MOVE`; grab the handle on the left side of the card header
+- **Delete mode** — toggle `✕ DEL`; reveals the remove button per card
 - Project list and editor selections persist across reboots (stored in Plasma configuration)
-- Tooltips in Spanish on all icon buttons
+- Tooltips in Spanish on all buttons (requires hover)
 - **Docker Compose support** — if a project contains a compose file (`docker-compose*.yml/yaml`, `compose*.yml/yaml`):
-  - **▶ green** — runs `docker compose up -d`; service tree expands immediately showing live startup status
-  - **■ red** — runs `docker compose down`; available during startup to cancel
-  - **↓ expand** — reveals the service tree while Docker is up
-  - **↓ pull** — runs `docker compose pull` to update images (opens Konsole)
-  - **📄 file selector** — when multiple compose files exist, opens a menu to pick which one to use; tooltip shows the active file
-  - Spinner while `docker compose down` is in progress
-- **Live startup status** — while services are coming up, the tree shows each one with a pulsing yellow dot; transitions to green (running) or red (exited/dead) as each settles; polls every 1s during startup, every 3s otherwise; 60s safety timeout
-- **Service tree** (expanded per project when Docker is running):
-  - Status dot per service — yellow pulsing (starting) / green (running) / red (exited)
-  - Mapped ports shown inline
-  - **Ver logs** — `docker compose logs -f <service>` in Konsole
-  - **Reiniciar** — `docker compose restart <service>`
-  - **Construir imagen** — `docker compose build <service>` in Konsole
-  - **Abrir terminal** — `docker compose exec <service> sh` in Konsole (running only)
-  - **Abrir en navegador** — opens `http://localhost:<port>` (if ports are exposed)
-  - Action buttons hidden per service until it finishes starting
+  - **▶ LAUNCH** (green) — runs `docker compose up -d`; service panel expands with live startup status
+  - **■ STOP** — runs `docker compose down`; also available during startup to cancel
+  - **↓ PULL** — runs `docker compose pull` to update images (opens Konsole)
+  - **▼/▲** — expand/collapse the service panel while Docker is running
+  - **File selector** — when multiple compose files exist, the FILE row opens a menu to pick the active one
+  - Spinner (`BusyIndicator`) while `docker compose down` is in progress
+- **Live startup status** — while services start, each shows a pulsing status square; transitions to solid green (running) or red (exited/dead); polls every 1s during startup, every 3s otherwise; 60s safety timeout
+- **Service panel** (shown per project when Docker is running):
+  - Status square per service — pulsing gray (starting) / solid green (running) / red (exited)
+  - Port badge in green when exposed
+  - **LOG** — `docker compose logs -f <service>` in Konsole
+  - **↺** — `docker compose restart <service>`
+  - **SH** — `docker compose exec <service> sh` in Konsole (running only)
+  - **BLD** — `docker compose build <service>` in Konsole
+  - **🌐** — opens `http://localhost:<port>` in the browser (running + port exposed only)
+  - All service buttons hidden while the service is still starting
 
 ## Preview
 
 ```
-┌────────────────────────────────────────────────┐
-│ ⟨/⟩  Proyectos                             [+] │
-├────────────────────────────────────────────────┤
-│ ⟨/⟩  Proyectos         [🔍][✎][🗑][⇅][+]     │  ← search / editor / delete / reorder toggles
-├────────────────────────────────────────────────┤
-│ [⋮] [code] my-app  [▾][■][↓][📄][✎][−]       │  ← drag handle (reorder), editor btn, delete btn
-│        ● api  8080 [≡][↺][⚙][sh][🌐]         │
-│        ● db        [≡][↺][⚙]                 │
-├────────────────────────────────────────────────┤
-│ [kate] staging      [▾][■][📄][✎][−]          │  ← Kate selected for this project
-│ [code] api-service  [▶][↓][✎][−]              │
-│ [term] dotfiles     [✎][−]                    │  ← Vim, no compose
-└────────────────────────────────────────────────┘
+╔══════════════════════════════════════════════════════╗
+║  ▌▌▌ DEV PROJECTS           TOTAL  RUNNING  OFF     ║
+║  PLASMA WIDGET // PROJECT LAUNCHER  06    ██    —   ║
+╠══════════════════════════════════════════════════════╣
+║  [⌕ SRCH] [⇅ MOVE] [✎ EDIT] [✕ DEL]     [+ ADD]   ║
+╠══════════════════════════════════════════════════════╣
+║  ┌── PROJECT_ID ▌▌▌ MY-APP          ● OFFLINE ──┐   ║
+║  │  PATH    ~/Code/my-app                        │   ║
+║  │  STATUS  ░░░░░░░░░░  (empty bar)              │   ║
+║  │  FILE    compose.yml                          │   ║
+║  │  [OPEN] [↓ PULL]                  [▶ LAUNCH] │   ║
+║  └───────────────────────────────────────────────┘   ║
+║  ┌── PROJECT_ID ▌▌▌ BACKEND     ■ RUNNING ▼ ──┐     ║
+║  │  PATH    ~/Code/backend                      │     ║
+║  │  STATUS  ████████████  (full green bar)      │     ║
+║  │  ┌── SERVICES ──────────────────────────┐    │     ║
+║  │  │  ■ api    RUNNING  :3000  LOG ↺ SH BLD 🌐│    │     ║
+║  │  │  ■ db     RUNNING  :5432  LOG ↺ SH BLD   │    │     ║
+║  │  └──────────────────────────────────────┘    │     ║
+║  │  [OPEN] [↓ PULL]                  [■ STOP]  │     ║
+║  └───────────────────────────────────────────────┘   ║
+╚══════════════════════════════════════════════════════╝
 ```
 
 ## Requirements
