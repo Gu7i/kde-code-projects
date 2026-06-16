@@ -685,8 +685,9 @@ PlasmoidItem {
                                             // PROJECT_ID label
                                             Text {
                                                 text: "PROJECT_ID"
-                                                font.family: root.mono; font.pixelSize: root.fzTiny; font.letterSpacing: 2
-                                                color: "#777777"
+                                                font.family: root.mono; font.pixelSize: root.fzTiny
+                                                font.bold: true; font.letterSpacing: 2
+                                                color: "#aaaaaa"
                                             }
 
                                             // Project name — expands
@@ -737,13 +738,6 @@ PlasmoidItem {
                                             }
                                         }
 
-                                        // Click header to open project
-                                        MouseArea {
-                                            anchors.fill: parent; z: -1
-                                            enabled: !fullRep.dragEnabled
-                                            onClicked: { root.openProject(projectPath, projectItem.currentEditor); root.expanded = false }
-                                            cursorShape: Qt.PointingHandCursor
-                                        }
                                     }
 
                                     // ── Card body ─────────────────────────────
