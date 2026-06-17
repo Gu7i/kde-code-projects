@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Controls 2.0 as QQC2
 import Qt.labs.platform as Platform
 import Qt.labs.folderlistmodel
 import org.kde.plasma.plasmoid
@@ -785,22 +786,41 @@ PlasmoidItem {
                                                         font.bold: true; color: root.clrText
                                                     }
                                                     Rectangle {
-                                                        implicitWidth: editorTxt.implicitWidth + 16; implicitHeight: 18
+                                                        id: editorBtn
+                                                        implicitWidth: editorTxt.implicitWidth + 32; implicitHeight: 22
                                                         color: root.clrBtn; border.color: root.clrBorder; border.width: 1
-                                                        Text {
-                                                            id: editorTxt; anchors.centerIn: parent
-                                                            text: { var o = root.editorOptions.find(e => e.cmd === projectItem.currentEditor); return o ? o.name.toUpperCase() : "CODE" }
-                                                            font.family: root.mono; font.pixelSize: 8; font.bold: true; color: root.clrText
+                                                        RowLayout {
+                                                            anchors.fill: parent; anchors.leftMargin: 8; anchors.rightMargin: 6; spacing: 4
+                                                            Text {
+                                                                id: editorTxt; Layout.fillWidth: true
+                                                                text: { var o = root.editorOptions.find(e => e.cmd === projectItem.currentEditor); return o ? o.name.toUpperCase() : "CODE" }
+                                                                font.family: root.mono; font.pixelSize: 9; font.bold: true; color: root.clrText
+                                                            }
+                                                            Text { text: "▾"; font.family: root.mono; font.pixelSize: 9; color: root.clrMuted }
                                                         }
-                                                        MouseArea { anchors.fill: parent; onClicked: editorMenu.popup() }
-                                                        PlasmaComponents.Menu {
-                                                            id: editorMenu
-                                                            Repeater {
-                                                                model: root.editorOptions
-                                                                PlasmaComponents.MenuItem {
-                                                                    text: modelData.name; checkable: true
-                                                                    checked: projectItem.currentEditor === modelData.cmd
-                                                                    onTriggered: projectItem.setEditor(modelData.cmd)
+                                                        MouseArea { anchors.fill: parent; onClicked: editorPopup.open() }
+                                                        QQC2.Popup {
+                                                            id: editorPopup
+                                                            y: parent.height + 2
+                                                            width: 170; padding: 0
+                                                            background: Rectangle { color: "#111111"; border.color: root.clrBorder; border.width: 1 }
+                                                            contentItem: Column {
+                                                                width: 170
+                                                                Repeater {
+                                                                    model: root.editorOptions
+                                                                    delegate: Rectangle {
+                                                                        width: 170; height: 28
+                                                                        color: eItemHov.containsMouse ? "#1e1e1e" : "#111111"
+                                                                        Rectangle { width: 3; height: parent.height; color: root.clrGreen; visible: projectItem.currentEditor === modelData.cmd }
+                                                                        Text {
+                                                                            anchors.verticalCenter: parent.verticalCenter; x: 12
+                                                                            text: modelData.name.toUpperCase()
+                                                                            font.family: root.mono; font.pixelSize: 10; font.bold: true
+                                                                            color: projectItem.currentEditor === modelData.cmd ? root.clrGreen : "#cccccc"
+                                                                        }
+                                                                        HoverHandler { id: eItemHov }
+                                                                        MouseArea { anchors.fill: parent; onClicked: { projectItem.setEditor(modelData.cmd); editorPopup.close() } }
+                                                                    }
                                                                 }
                                                             }
                                                         }
@@ -817,33 +837,56 @@ PlasmoidItem {
                                                         font.weight: Font.ExtraBold; color: root.clrText
                                                     }
                                                     Rectangle {
-                                                        implicitWidth: fileTxt.implicitWidth + 16; implicitHeight: 18
+                                                        id: fileBtn
+                                                        implicitWidth: fileTxt.implicitWidth + 32; implicitHeight: 22
                                                         color: dockerFiles.count > 1 ? root.clrBtn : "transparent"
                                                         border.color: dockerFiles.count > 1 ? root.clrBorder : "transparent"
                                                         border.width: 1
-                                                        Text {
-                                                            id: fileTxt; anchors.centerIn: parent
-                                                            text: projectItem.composeFileNames.length > 0 ? projectItem.composeFileNames[projectItem.selectedComposeIndex] : "—"
-                                                            font.family: root.mono; font.pixelSize: 11; font.bold: true; color: root.clrText
+                                                        RowLayout {
+                                                            anchors.fill: parent; anchors.leftMargin: 8; anchors.rightMargin: 6; spacing: 4
+                                                            Text {
+                                                                id: fileTxt; Layout.fillWidth: true
+                                                                text: projectItem.composeFileNames.length > 0 ? projectItem.composeFileNames[projectItem.selectedComposeIndex] : "—"
+                                                                font.family: root.mono; font.pixelSize: 11; font.bold: true; color: root.clrText
+                                                            }
+                                                            Text { visible: dockerFiles.count > 1; text: "▾"; font.family: root.mono; font.pixelSize: 9; color: root.clrMuted }
                                                         }
                                                         MouseArea {
                                                             anchors.fill: parent
                                                             enabled: dockerFiles.count > 1 && !projectItem.isLoading && !projectItem.isStarting
-                                                            onClicked: composeMenu.popup()
+                                                            onClicked: composePopup.open()
                                                         }
-                                                        PlasmaComponents.Menu {
-                                                            id: composeMenu
-                                                            Repeater {
-                                                                model: projectItem.composeFileNames
-                                                                PlasmaComponents.MenuItem {
-                                                                    text: modelData; checkable: true
-                                                                    checked: index === projectItem.selectedComposeIndex
-                                                                    onTriggered: {
-                                                                        if (projectItem.selectedComposeIndex !== index) {
-                                                                            projectItem.selectedComposeIndex = index
-                                                                            projectItem.isExpanded = false
-                                                                            projectItem.isRunning  = false
-                                                                            projectItem.checkStatus()
+                                                        QQC2.Popup {
+                                                            id: composePopup
+                                                            y: parent.height + 2
+                                                            width: 220; padding: 0
+                                                            background: Rectangle { color: "#111111"; border.color: root.clrBorder; border.width: 1 }
+                                                            contentItem: Column {
+                                                                width: 220
+                                                                Repeater {
+                                                                    model: projectItem.composeFileNames
+                                                                    delegate: Rectangle {
+                                                                        width: 220; height: 28
+                                                                        color: cItemHov.containsMouse ? "#1e1e1e" : "#111111"
+                                                                        Rectangle { width: 3; height: parent.height; color: root.clrGreen; visible: index === projectItem.selectedComposeIndex }
+                                                                        Text {
+                                                                            anchors.verticalCenter: parent.verticalCenter; x: 12
+                                                                            text: modelData
+                                                                            font.family: root.mono; font.pixelSize: 10; font.bold: true
+                                                                            color: index === projectItem.selectedComposeIndex ? root.clrGreen : "#cccccc"
+                                                                        }
+                                                                        HoverHandler { id: cItemHov }
+                                                                        MouseArea {
+                                                                            anchors.fill: parent
+                                                                            onClicked: {
+                                                                                if (projectItem.selectedComposeIndex !== index) {
+                                                                                    projectItem.selectedComposeIndex = index
+                                                                                    projectItem.isExpanded = false
+                                                                                    projectItem.isRunning  = false
+                                                                                    projectItem.checkStatus()
+                                                                                }
+                                                                                composePopup.close()
+                                                                            }
                                                                         }
                                                                     }
                                                                 }
