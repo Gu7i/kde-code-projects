@@ -208,7 +208,7 @@ PlasmoidItem {
                                 Repeater {
                                     model: parent.bars.length
                                     Rectangle {
-                                        width: parent.parent.bars[index]; height: 34
+                                        width: parent.bars[index]; height: 34
                                         color: index % 2 === 0 ? root.clrHdr : "transparent"
                                     }
                                 }
@@ -1184,7 +1184,7 @@ PlasmoidItem {
                         property var bars: [1,3,1,2,4,1,2,1,3,2,1,4,1,2]
                         Repeater {
                             model: parent.bars.length
-                            Rectangle { width: parent.parent.bars[index]; height: 24; color: index % 2 === 0 ? root.clrBorder : "transparent" }
+                            Rectangle { width: parent.bars[index]; height: 24; color: index % 2 === 0 ? root.clrBorder : "transparent" }
                         }
                     }
 
@@ -1201,7 +1201,7 @@ PlasmoidItem {
                         property var bars: [2,1,3,1,2,4,1,2,1,3,1,2,1,3]
                         Repeater {
                             model: parent.bars.length
-                            Rectangle { width: parent.parent.bars[index]; height: 24; color: index % 2 === 0 ? root.clrBorder : "transparent" }
+                            Rectangle { width: parent.bars[index]; height: 24; color: index % 2 === 0 ? root.clrBorder : "transparent" }
                         }
                     }
                 }
