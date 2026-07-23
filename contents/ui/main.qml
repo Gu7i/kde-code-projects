@@ -577,7 +577,7 @@ PlasmoidItem {
                                     if (root.expanded) {
                                         if (dockerFiles.count > 0 && !projectItem.isStarting) projectItem.checkStatus()
                                     } else {
-                                        editorMenu.close(); composeMenu.close()
+                                        editorPopup.close(); composePopup.close()
                                         fullRep.draggedIndex = -1; fullRep.dropTargetIndex = -1
                                     }
                                 }
