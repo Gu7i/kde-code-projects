@@ -8,9 +8,18 @@ A KDE Plasma 6 panel widget to quickly open your code projects in any editor, wi
 
 ## Design
 
-Industrial HUD aesthetic: gray background (`#c0c0c0`), thick black borders, monospace font, and neon green (`#00ff00`) used exclusively for active/running state — status bars, badges, port labels, and the `▶ LAUNCH` button. Each project is displayed as a scan card with a `PROJECT_ID  NOMBRE` header and a live status bar that fills green when Docker is running.
+Industrial HUD aesthetic: gray background (`#c0c0c0`), hairline black borders, monospace font. Each project is a scan card with a `PROJECT_ID  NOMBRE` header.
 
-All UI elements use large, bold monospace text for maximum readability. Dropdowns for editor and compose file selection use a custom dark HUD overlay (black background, green accent on selected item) instead of the system menu.
+The palette follows four rules:
+
+1. **One accent, one meaning.** Green (`#2fbf4a`) means *"this is alive"* and nothing else — the card's left rail, the `RUNNING` badge, the status bar, the per-service dot, and the `ACTIVOS` counter. It is never used for actions, selection, hover or counts.
+2. **Signal green, not neon.** `#2fbf4a` instead of `#00ff00`, so it stops vibrating against the gray. `#0f5c22` for green text on a light ground.
+3. **Three button tiers.** Ink fill (`#111111`) = primary (`+ ADD`, `▶ LAUNCH`, active toggles); 1 px hairline only = secondary (`OPEN`, `↓ PULL`, `LOG`, `SH`, `BLD`); red outline (`#a32d16`) = destructive (`■ STOP`, `✕ DEL`).
+4. **The label steps back.** Field labels (`PATH`, `STATUS`, `FILE`, `EDITOR`) are 9 px, normal weight, gray; their values are 12 px bold ink. Hierarchy comes from size and color, not from two competing bolds.
+
+The black card header bar is a **state signal, not decoration**: only a running project gets it, so the list can be scanned without reading a single badge. Barcodes and part numbers sit at 32 % opacity — texture, not data.
+
+Dropdowns for editor and compose file selection use a custom dark HUD overlay instead of the system menu; the selected item is marked in white, since on a black surface white is the ink.
 
 ## Features
 
@@ -24,7 +33,7 @@ All UI elements use large, bold monospace text for maximum readability. Dropdown
 - Tooltips in Spanish on all buttons (requires hover)
 - **Docker Compose support** — if a project contains a compose file (`docker-compose*.yml/yaml`, `compose*.yml/yaml`):
   - **OPEN / ↓ PULL / ▶ LAUNCH** — stacked vertically on the right side of each card
-  - **▶ LAUNCH** (green) — runs `docker compose up -d`; service panel expands with live startup status
+  - **▶ LAUNCH** (ink) — runs `docker compose up -d`; service panel expands with live startup status
   - **■ STOP** — runs `docker compose down`; also available during startup to cancel
   - **↓ PULL** — runs `docker compose pull` to update images (opens Konsole)
   - **▼/▲** — expand/collapse the service panel while Docker is running
@@ -33,7 +42,7 @@ All UI elements use large, bold monospace text for maximum readability. Dropdown
 - **Live startup status** — while services start, each shows a pulsing status square; transitions to solid green (running) or red (exited/dead); polls every 1s during startup, every 3s otherwise; 60s safety timeout
 - **Service panel** (shown per project when Docker is running):
   - Status square per service — pulsing gray (starting) / solid green (running) / red (exited)
-  - Port badge in green when exposed
+  - Port badge outlined when exposed
   - **LOG** — `docker compose logs -f <service>` in Konsole
   - **↺** — `docker compose restart <service>`
   - **SH** — `docker compose exec <service> sh` in Konsole (running only)
@@ -45,24 +54,24 @@ All UI elements use large, bold monospace text for maximum readability. Dropdown
 
 ```
 ╔══════════════════════════════════════════════════════╗
-║  ▌▌▌ DEV PROJECTS        TOTAL  RUNNING    OFF      ║
-║  PLASMA WIDGET // PROJECT LAUNCHER  06    ██    02  ║
+║  ▌▌▌ DEV PROJECTS        TOTAL  ACTIVOS    OFF      ║
+║  PLASMA WIDGET // PROJECT LAUNCHER  06   ■ 04   02  ║
 ╠══════════════════════════════════════════════════════╣
 ║  [⌕ SRCH] [⇅ MOVE] [✎ EDIT] [✕ DEL]     [+ ADD]   ║
 ╠══════════════════════════════════════════════════════╣
-║  ┌── PROJECT_ID  MY-APP            ● OFFLINE ──┐    ║
-║  │  PATH    ~/Code/my-app              [OPEN ] │    ║
-║  │  STATUS  ░░░░░░░░░░░░              [↓ PULL] │    ║
-║  │  FILE    compose.yml ▾             [▶LAUNCH]│    ║
+║  ┌─ PROJECT_ID  MY-APP              [OFFLINE] ─┐    ║   ← apagado: cabecera clara
+║  │  path    ~/Code/my-app              [OPEN ] │    ║
+║  │  status  ░░░░░░░░░░░░              [↓ PULL] │    ║
+║  │  file    compose.yml ▾             [▶LAUNCH]│    ║
 ║  └──────────────────────────────────────────────┘   ║
-║  ┌── PROJECT_ID  BACKEND          ■ RUNNING ▼ ─┐    ║
-║  │  PATH    ~/Code/backend              [OPEN ] │    ║
-║  │  STATUS  ████████████████           [↓ PULL] │    ║
-║  │  ┌── SERVICES ───────────────────┐  [■ STOP] │    ║
-║  │  │ ■ api  RUNNING :3000 LOG ↺ SH BLD 🌐     │    ║
-║  │  │ ■ db   RUNNING :5432 LOG ↺ SH BLD        │    ║
-║  │  └───────────────────────────────┘           │    ║
-║  └──────────────────────────────────────────────┘   ║
+║  ▐┏━ PROJECT_ID  BACKEND            [RUNNING] ▼ ┓   ║   ← vivo: cabecera negra
+║  ▐┃  path    ~/Code/backend              [OPEN ] ┃   ║      y raíl verde
+║  ▐┃  status  ████████████████           [↓ PULL] ┃   ║
+║  ▐┃  ┌─ SERVICIOS ─────────────────┐   [■ STOP] ┃   ║
+║  ▐┃  │ ■ api  RUNNING :3000 LOG ↺ SH BLD 🌐    ┃   ║
+║  ▐┃  │ ■ db   RUNNING :5432 LOG ↺ SH BLD       ┃   ║
+║  ▐┃  └─────────────────────────────┘            ┃   ║
+║  ▐┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛   ║
 ╚══════════════════════════════════════════════════════╝
 ```
 
