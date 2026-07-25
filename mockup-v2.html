@@ -1,0 +1,567 @@
+<meta charset="utf-8">
+<title>DEV PROJECTS — propuesta v2</title>
+
+<style>
+  /* ── Página (chrome del mockup): sí respeta el tema del visor ───────────── */
+  :root {
+    --pg-bg:    #e8e8e4;
+    --pg-fg:    #1b1c17;
+    --pg-mut:   #5d5f54;
+    --pg-card:  #f4f4f1;
+    --pg-rule:  rgba(27,28,23,.14);
+    --pg-acc:   #1f7a36;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --pg-bg:   #161713;
+      --pg-fg:   #e9e9e3;
+      --pg-mut:  #9b9d90;
+      --pg-card: #1f201a;
+      --pg-rule: rgba(233,233,227,.14);
+      --pg-acc:  #6fcb84;
+    }
+  }
+  :root[data-theme="dark"] {
+    --pg-bg:   #161713;
+    --pg-fg:   #e9e9e3;
+    --pg-mut:  #9b9d90;
+    --pg-card: #1f201a;
+    --pg-rule: rgba(233,233,227,.14);
+    --pg-acc:  #6fcb84;
+  }
+  :root[data-theme="light"] {
+    --pg-bg:   #e8e8e4;
+    --pg-fg:   #1b1c17;
+    --pg-mut:  #5d5f54;
+    --pg-card: #f4f4f1;
+    --pg-rule: rgba(27,28,23,.14);
+    --pg-acc:  #1f7a36;
+  }
+
+  /* ── Widget: compromiso deliberado con un solo look (es un producto de
+        tema fijo, gris industrial). No invierte con el tema del visor. ────── */
+  .w {
+    --ground:  #b6b6b2;
+    --card:    #d6d6d1;
+    --shell:   #c5c5c0;
+    --panel:   #cacac5;
+    --ink:     #131410;
+    --ink-2:   #3c3d35;   /* valores secundarios: antes #333 pero con peso real */
+    --ink-3:   #5c5d53;   /* etiquetas: sube de #666 a #5c5d53 + no van a 9 px */
+    --live:    #1f9c3e;
+    --live-tx: #0b5220;
+    --on-live: #05300f;
+    --red:     #9c2b15;
+    --rule:    rgba(19,20,16,.20);
+    --rule-2:  rgba(19,20,16,.45);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--pg-bg);
+    color: var(--pg-fg);
+    font-family: ui-sans-serif, "Inter", "Noto Sans", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page { max-width: 1180px; margin: 0 auto; padding: 40px 24px 72px; }
+
+  .eyebrow {
+    margin: 0 0 10px;
+    font: 600 11px/1 ui-monospace, "JetBrains Mono", "DejaVu Sans Mono", monospace;
+    letter-spacing: .18em; text-transform: uppercase; color: var(--pg-mut);
+  }
+  .page h1 {
+    margin: 0 0 12px; font-size: clamp(26px, 3.4vw, 38px); font-weight: 700;
+    letter-spacing: -.02em; text-wrap: balance; line-height: 1.08;
+  }
+  .lede { margin: 0; max-width: 62ch; color: var(--pg-mut); font-size: 15px; line-height: 1.55; }
+
+  .split {
+    display: grid; gap: 40px; align-items: start; margin-top: 36px;
+    grid-template-columns: 512px minmax(0, 1fr);
+  }
+  @media (max-width: 980px) { .split { grid-template-columns: minmax(0, 1fr); } }
+
+  .stage { display: flex; flex-direction: column; gap: 14px; }
+  .stage-cap {
+    font: 500 11px/1.4 ui-monospace, "JetBrains Mono", "DejaVu Sans Mono", monospace;
+    letter-spacing: .12em; text-transform: uppercase; color: var(--pg-mut);
+  }
+
+  /* ═══ WIDGET ════════════════════════════════════════════════════════════ */
+  .w {
+    width: 100%; max-width: 512px;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: ui-monospace, "JetBrains Mono", "DejaVu Sans Mono", "Liberation Mono", monospace;
+    font-size: 11px;
+    border: 1px solid rgba(0,0,0,.45);
+    box-shadow: 0 18px 40px -24px rgba(0,0,0,.6);
+    overflow: hidden;
+  }
+
+  /* ── Cabecera ─────────────────────────────────────────────────────────── */
+  .w-hd {
+    display: flex; align-items: center; gap: 14px;
+    padding: 12px 12px 12px 12px;
+    background: var(--card);
+    border-bottom: 2px solid var(--ink);
+  }
+  .brand { display: flex; align-items: center; gap: 11px; flex: 1; min-width: 0; }
+
+  /* Código de barras: o se ve, o no está. Pasa de opacity .32 a tinta plena. */
+  .barcode { display: flex; align-items: flex-end; height: 32px; gap: 0; }
+  .barcode i { display: block; height: 100%; background: var(--ink); }
+  .barcode i.s { opacity: 0; }
+
+  .w-title {
+    margin: 0; font-size: 16px; font-weight: 700; letter-spacing: .16em; line-height: 1;
+  }
+  .w-sub {
+    margin: 5px 0 0; font-size: 9px; letter-spacing: .2em; color: var(--ink-3);
+  }
+
+  /* Un solo readout: la cifra que importa sobre el total. Alineado a la
+     derecha, con la etiqueta debajo — sin tres columnas del mismo peso. */
+  .readout {
+    padding-left: 16px; border-left: 1px solid var(--rule-2);
+    text-align: right; align-self: stretch;
+    display: flex; flex-direction: column; justify-content: center; gap: 4px;
+  }
+  .rd-num { font-variant-numeric: tabular-nums; line-height: 1; white-space: nowrap; }
+  .rd-num b { font-size: 26px; font-weight: 700; color: var(--live-tx); letter-spacing: .01em; }
+  .rd-num b.zero { color: var(--ink-3); }
+  .rd-num span { font-size: 15px; font-weight: 400; color: var(--ink-3); }
+  .rd-lb { font-size: 8px; letter-spacing: .18em; color: var(--ink-3); }
+
+  /* ── Toolbar ──────────────────────────────────────────────────────────── */
+  .w-tb {
+    display: flex; align-items: center; gap: 5px;
+    padding: 6px 8px; background: var(--shell);
+    border-bottom: 1px solid var(--rule-2);
+  }
+  .tb {
+    font-family: inherit; font-size: 10px; font-weight: 400; line-height: 1;
+    letter-spacing: .08em;
+    height: 24px; padding: 0 11px;
+    color: var(--ink-2); background: transparent;
+    border: 1px solid var(--rule); border-radius: 0;
+    cursor: pointer;
+  }
+  .tb:hover { border-color: var(--rule-2); color: var(--ink); }
+  .tb[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: #fff; font-weight: 700; }
+  .tb.add { margin-left: auto; background: var(--ink); border-color: var(--ink); color: #fff; font-weight: 700; }
+  .tb:focus-visible { outline: 2px solid var(--live); outline-offset: 1px; }
+
+  /* ── Lista ────────────────────────────────────────────────────────────── */
+  .w-list { display: flex; flex-direction: column; gap: 6px; padding: 8px; }
+
+  .card {
+    position: relative;
+    background: var(--card);
+    border: 1px solid var(--rule);
+    padding: 9px 10px 9px 12px;
+  }
+  .card.live { border-color: var(--ink); }
+  .card.live::before,
+  .card.boot::before {
+    content: ""; position: absolute; inset: -1px auto -1px -1px; width: 4px; background: var(--live);
+  }
+  .card.boot { border-color: var(--rule-2); }
+  .card.boot::before {
+    background: repeating-linear-gradient(-45deg, var(--live) 0 4px, rgba(31,156,62,.25) 4px 8px);
+    animation: crawl 900ms linear infinite;
+  }
+  @keyframes crawl { to { background-position: 0 -11.4px; } }
+  @media (prefers-reduced-motion: reduce) { .card.boot::before { animation: none; } }
+
+  .c-row { display: flex; gap: 10px; align-items: flex-start; }
+  .c-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+
+  .c-top { display: flex; align-items: center; gap: 8px; }
+  /* Sin etiqueta PROJECT_ID: el nombre es lo que buscas, así que es el título. */
+  .c-name {
+    margin: 0; font-size: 13px; font-weight: 700; letter-spacing: .07em;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    color: var(--ink);
+  }
+  .card:not(.live):not(.boot) .c-name { color: var(--ink-2); }
+
+  .chip {
+    margin-left: auto; flex: none;
+    font-size: 9px; letter-spacing: .16em; line-height: 1;
+    padding: 5px 8px; border: 1px solid var(--rule-2); color: var(--ink-3);
+  }
+  .chip.on { background: var(--live); border-color: var(--live); color: var(--on-live); font-weight: 700; }
+  .chip.boot { border-color: var(--ink); color: var(--ink); font-weight: 700; }
+
+  /* La ruta ya no necesita la palabra PATH: se reconoce por la forma. */
+  .c-path {
+    margin: 0; font-size: 11px; color: var(--ink-2);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+
+  .c-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 10px; color: var(--ink-3); }
+  .tag {
+    font: inherit; letter-spacing: .02em; color: var(--ink-2);
+    padding: 3px 7px; border: 1px solid var(--rule); background: transparent; cursor: pointer;
+  }
+  .tag:hover { border-color: var(--rule-2); }
+  .tag[disabled] { cursor: default; border-color: transparent; padding-left: 0; }
+  .c-meta .dot { width: 7px; height: 7px; background: var(--live); flex: none; }
+  .c-meta .sep { color: var(--rule-2); }
+  .c-meta b { font-weight: 700; color: var(--ink-2); }
+
+  .disc {
+    flex: none; width: 22px; height: 22px; line-height: 1;
+    background: transparent; border: 1px solid transparent; color: var(--ink-3);
+    font: inherit; font-size: 10px; cursor: pointer;
+  }
+  .disc:hover { color: var(--ink); border-color: var(--rule); }
+
+  /* Acciones: una sola primaria rellena por tarjeta. */
+  .c-act { flex: none; width: 88px; display: flex; flex-direction: column; gap: 4px; }
+  .btn {
+    height: 22px; width: 100%; padding: 0 4px;
+    font-family: inherit; font-size: 10px; font-weight: 400; line-height: 1;
+    letter-spacing: .06em; white-space: nowrap;
+    background: transparent; border: 1px solid var(--rule); color: var(--ink-2); cursor: pointer;
+  }
+  .btn:hover { border-color: var(--rule-2); color: var(--ink); }
+  .btn.pri { background: var(--ink); border-color: var(--ink); color: #fff; font-weight: 700; }
+  .btn.dgr { border-color: var(--red); color: var(--red); font-weight: 700; }
+  .btn:focus-visible { outline: 2px solid var(--live); outline-offset: 1px; }
+
+  /* ── Panel de servicios ───────────────────────────────────────────────── */
+  .svc {
+    margin: 9px -10px -9px -8px;
+    background: var(--panel); border-top: 1px solid var(--rule-2);
+  }
+  .svc-hd {
+    display: flex; align-items: baseline; gap: 8px;
+    padding: 7px 10px 7px 8px; border-bottom: 1px solid var(--rule);
+    font-size: 9px; letter-spacing: .2em; color: var(--ink-3);
+  }
+  .svc-hd b { margin-left: auto; font-size: 11px; letter-spacing: 0; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+  .svc-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 8px; border-bottom: 1px solid var(--rule);
+  }
+  .svc-row:last-child { border-bottom: 0; }
+  .svc-row .st { width: 9px; height: 9px; flex: none; background: var(--live); }
+  .svc-row .st.down { background: var(--red); }
+  .svc-row .nm { font-size: 11px; font-weight: 700; color: var(--ink); min-width: 96px; }
+  .svc-row .stt { font-size: 9px; letter-spacing: .14em; color: var(--ink-3); min-width: 58px; }
+  .svc-row .port { font-size: 10px; font-weight: 700; color: var(--ink-2); padding: 2px 6px; border: 1px solid var(--rule); }
+  .svc-acts { margin-left: auto; display: flex; gap: 3px; }
+  .svc-acts .btn { width: auto; padding: 0 7px; height: 21px; }
+
+  .boot-line { padding: 12px 10px; font-size: 10px; letter-spacing: .14em; color: var(--ink-3); }
+
+  /* ── Footer ───────────────────────────────────────────────────────────── */
+  .w-ft {
+    display: flex; align-items: center; gap: 12px;
+    padding: 9px 12px; background: var(--shell);
+    border-top: 2px solid var(--ink);
+    font-size: 9px; letter-spacing: .16em; color: var(--ink-3);
+  }
+  .w-ft .barcode { height: 18px; }
+  .w-ft .sn { margin-left: auto; letter-spacing: .1em; }
+
+  /* ═══ Notas ═════════════════════════════════════════════════════════════ */
+  .notes { display: flex; flex-direction: column; gap: 2px; }
+  .note {
+    background: var(--pg-card); border: 1px solid var(--pg-rule);
+    padding: 16px 18px;
+  }
+  .note + .note { border-top: 0; }
+  .note h3 {
+    margin: 0 0 7px; font-size: 14px; font-weight: 650; letter-spacing: -.01em;
+    display: flex; align-items: baseline; gap: 9px;
+  }
+  .note h3 em {
+    font: 600 10px/1 ui-monospace, "JetBrains Mono", "DejaVu Sans Mono", monospace;
+    letter-spacing: .14em; font-style: normal; color: var(--pg-acc);
+  }
+  .note p { margin: 0; font-size: 13.5px; line-height: 1.6; color: var(--pg-mut); }
+  .note p + p { margin-top: 8px; }
+  .note code {
+    font: 500 12px ui-monospace, "JetBrains Mono", "DejaVu Sans Mono", monospace;
+    background: var(--pg-rule); padding: 1px 5px; color: var(--pg-fg);
+  }
+  .note strong { color: var(--pg-fg); font-weight: 600; }
+</style>
+
+<div class="page">
+  <p class="eyebrow">kde-code-projects // propuesta v2</p>
+  <h1>Quitar etiquetas, no añadir tinta</h1>
+  <p class="lede">
+    La versión actual repite una etiqueta por cada dato (<code>PROJECT_ID</code>, <code>PATH</code>,
+    <code>STATUS</code>, <code>FILE</code>) y las pone todas al mismo tamaño y color que el resto.
+    Al final nada destaca. Aquí los datos se reconocen por su forma y su sitio, y el peso queda libre
+    para lo único que cambia: qué proyecto está vivo.
+  </p>
+
+  <div class="split">
+    <div class="stage">
+      <p class="stage-cap">Representación completa · 512 px</p>
+
+      <div class="w">
+        <!-- ── HEADER ────────────────────────────────────────────────── -->
+        <div class="w-hd">
+          <div class="brand">
+            <div class="barcode" aria-hidden="true">
+              <i style="width:2px"></i><i class="s" style="width:1px"></i><i style="width:4px"></i><i class="s" style="width:2px"></i><i style="width:1px"></i><i class="s" style="width:1px"></i><i style="width:3px"></i><i class="s" style="width:2px"></i><i style="width:1px"></i><i class="s" style="width:1px"></i><i style="width:2px"></i><i class="s" style="width:3px"></i><i style="width:4px"></i><i class="s" style="width:1px"></i><i style="width:1px"></i><i class="s" style="width:2px"></i><i style="width:2px"></i><i class="s" style="width:1px"></i><i style="width:3px"></i>
+            </div>
+            <div>
+              <h2 class="w-title">DEV PROJECTS</h2>
+              <p class="w-sub">PROJECT LAUNCHER</p>
+            </div>
+          </div>
+          <div class="readout">
+            <div class="rd-num"><b>02</b><span>/08</span></div>
+            <div class="rd-lb">ACTIVOS / TOTAL</div>
+          </div>
+        </div>
+
+        <!-- ── TOOLBAR ───────────────────────────────────────────────── -->
+        <div class="w-tb">
+          <button class="tb" aria-pressed="false">⌕ SRCH</button>
+          <button class="tb" aria-pressed="false">⇅ MOVE</button>
+          <button class="tb" aria-pressed="false">✎ EDIT</button>
+          <button class="tb" aria-pressed="false">✕ DEL</button>
+          <button class="tb add">+ ADD</button>
+        </div>
+
+        <!-- ── LISTA ─────────────────────────────────────────────────── -->
+        <div class="w-list">
+
+          <!-- Vivo + desplegado -->
+          <article class="card live">
+            <div class="c-row">
+              <div class="c-info">
+                <div class="c-top">
+                  <h3 class="c-name">INFRACCIONES-AUTOMOTRICES</h3>
+                  <span class="chip on">RUNNING</span>
+                  <button class="disc" aria-label="Plegar servicios">▲</button>
+                </div>
+                <p class="c-path">~/Code/infracciones-automotrices</p>
+                <div class="c-meta">
+                  <button class="tag">docker-compose.yml ▾</button>
+                  <span class="dot"></span><b>3</b> servicios
+                  <span class="sep">·</span> :8080 · :5432
+                </div>
+              </div>
+              <div class="c-act">
+                <button class="btn">OPEN</button>
+                <button class="btn">↓ PULL</button>
+                <button class="btn dgr">■ STOP</button>
+              </div>
+            </div>
+
+            <div class="svc">
+              <div class="svc-hd">SERVICIOS <b>03</b></div>
+              <div class="svc-row">
+                <span class="st"></span>
+                <span class="nm">api</span>
+                <span class="stt">RUNNING</span>
+                <span class="port">:8080</span>
+                <span class="svc-acts">
+                  <button class="btn">LOG</button><button class="btn">↺</button>
+                  <button class="btn">SH</button><button class="btn">BLD</button>
+                </span>
+              </div>
+              <div class="svc-row">
+                <span class="st"></span>
+                <span class="nm">db</span>
+                <span class="stt">RUNNING</span>
+                <span class="port">:5432</span>
+                <span class="svc-acts">
+                  <button class="btn">LOG</button><button class="btn">↺</button>
+                  <button class="btn">SH</button><button class="btn">BLD</button>
+                </span>
+              </div>
+              <div class="svc-row">
+                <span class="st down"></span>
+                <span class="nm">worker</span>
+                <span class="stt">EXITED</span>
+                <span class="svc-acts">
+                  <button class="btn">LOG</button><button class="btn">↺</button>
+                  <button class="btn">BLD</button>
+                </span>
+              </div>
+            </div>
+          </article>
+
+          <!-- Arrancando -->
+          <article class="card boot">
+            <div class="c-row">
+              <div class="c-info">
+                <div class="c-top">
+                  <h3 class="c-name">JOMELY</h3>
+                  <span class="chip boot">STARTING</span>
+                  <button class="disc" aria-label="Plegar servicios">▲</button>
+                </div>
+                <p class="c-path">~/Code/apptec/jomely</p>
+                <div class="c-meta">
+                  <button class="tag">docker-compose.yml ▾</button>
+                </div>
+              </div>
+              <div class="c-act">
+                <button class="btn">OPEN</button>
+                <button class="btn dgr">■ STOP</button>
+              </div>
+            </div>
+            <div class="svc">
+              <p class="boot-line">◌  ARRANCANDO SERVICIOS…</p>
+            </div>
+          </article>
+
+          <!-- Apagado con compose -->
+          <article class="card">
+            <div class="c-row">
+              <div class="c-info">
+                <div class="c-top">
+                  <h3 class="c-name">HUBBLE</h3>
+                  <span class="chip">OFFLINE</span>
+                </div>
+                <p class="c-path">~/Code/apptec/hubble</p>
+                <div class="c-meta">
+                  <button class="tag">docker-compose.yml ▾</button>
+                </div>
+              </div>
+              <div class="c-act">
+                <button class="btn">OPEN</button>
+                <button class="btn">↓ PULL</button>
+                <button class="btn pri">▶ LAUNCH</button>
+              </div>
+            </div>
+          </article>
+
+          <!-- Sin compose: dos líneas, nada más -->
+          <article class="card">
+            <div class="c-row">
+              <div class="c-info">
+                <div class="c-top">
+                  <h3 class="c-name">KDE-CODE-PROJECTS</h3>
+                  <span class="chip">OFFLINE</span>
+                </div>
+                <p class="c-path">~/Code/kde-code-projects</p>
+              </div>
+              <div class="c-act"><button class="btn">OPEN</button></div>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="c-row">
+              <div class="c-info">
+                <div class="c-top">
+                  <h3 class="c-name">CLAUDE-CHATS</h3>
+                  <span class="chip">OFFLINE</span>
+                </div>
+                <p class="c-path">~/Code/claude-chats</p>
+              </div>
+              <div class="c-act"><button class="btn">OPEN</button></div>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="c-row">
+              <div class="c-info">
+                <div class="c-top">
+                  <h3 class="c-name">KDE-EWELINK-WIDGET</h3>
+                  <span class="chip">OFFLINE</span>
+                </div>
+                <p class="c-path">~/Code/kde-ewelink-widget</p>
+              </div>
+              <div class="c-act"><button class="btn">OPEN</button></div>
+            </div>
+          </article>
+
+        </div>
+
+        <!-- ── FOOTER ────────────────────────────────────────────────── -->
+        <div class="w-ft">
+          <div class="barcode" aria-hidden="true">
+            <i style="width:1px"></i><i class="s" style="width:2px"></i><i style="width:3px"></i><i class="s" style="width:1px"></i><i style="width:2px"></i><i class="s" style="width:2px"></i><i style="width:4px"></i><i class="s" style="width:1px"></i><i style="width:1px"></i><i class="s" style="width:2px"></i><i style="width:3px"></i><i class="s" style="width:1px"></i><i style="width:2px"></i>
+          </div>
+          <span>KDE::PLASMA PROJECT LAUNCHER</span>
+          <span class="sn">094-72-601 · v2.0</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── NOTAS ─────────────────────────────────────────────────────── -->
+    <aside class="notes">
+      <div class="note">
+        <h3><em>01</em> Fuera <code>PROJECT_ID</code></h3>
+        <p>
+          Cada tarjeta ya <strong>es</strong> un proyecto: la etiqueta no informaba de nada y competía
+          en tamaño con el nombre. El nombre sube a 13 px y se queda solo en su línea; el badge de
+          estado ocupa el hueco que dejó, alineado a la derecha.
+        </p>
+      </div>
+
+      <div class="note">
+        <h3><em>02</em> <code>PATH</code>, <code>STATUS</code> y <code>FILE</code> desaparecen como columna</h3>
+        <p>
+          No se leían por tres motivos a la vez: 9 px, <code>#666</code> sobre <code>#d4d4d4</code>
+          (3.9:1, por debajo del 4.5:1 mínimo) y Courier New, que es una tipografía de trazo muy
+          fino. La ruta se reconoce sola por empezar por <code>~/</code> y el compose por terminar en
+          <code>.yml</code> — no necesitan que se lo digas.
+        </p>
+        <p>
+          Donde sí quedan etiquetas (cabecera, panel de servicios), suben a <code>#5c5d53</code> y el
+          <code>mono</code> pasa de <strong>Courier New a JetBrains Mono / DejaVu Sans Mono</strong>.
+          Ese cambio de una línea es el que más se nota.
+        </p>
+      </div>
+
+      <div class="note">
+        <h3><em>03</em> La barra de STATUS se va</h3>
+        <p>
+          Era un riel de 5 px que en apagado estaba vacío: ocupaba una fila entera para no decir nada,
+          y en verde repetía lo que el badge ya decía. El estado ahora vive en tres sitios que se
+          escanean sin leer: el <strong>filete verde de 4 px</strong> del borde izquierdo, el badge
+          relleno y el borde de la tarjeta en tinta. Arrancando, ese filete se convierte en diagonales
+          en movimiento — un indeterminado de verdad, no una barra al 45 %.
+        </p>
+      </div>
+
+      <div class="note">
+        <h3><em>04</em> Un readout en vez de tres cifras iguales</h3>
+        <p>
+          <code>TOTAL</code>, <code>ACTIVOS</code> y <code>OFF</code> tenían anchos fijos distintos
+          (58 / 74 / 52 px) con el mismo <code>leftPadding</code>: por eso los huecos salían desiguales.
+          Y OFF es aritmética — total menos activos. Queda una sola lectura,
+          <strong>activos sobre total</strong>, alineada a la derecha con cifras tabulares: el
+          numerador en verde cuando hay algo vivo, gris cuando no.
+        </p>
+      </div>
+
+      <div class="note">
+        <h3><em>05</em> El código de barras: a tinta plena</h3>
+        <p>
+          Al 32 % de opacidad no era textura, era suciedad, y su matrícula a 7 px no la lee nadie.
+          Ahora va en negro sólido —es un grafismo, que se vea— y el número se muda al pie, a 9 px,
+          donde ya vivía su gemelo. En el pie queda <strong>un</strong> código, no dos: dos adornos
+          idénticos flanqueando el texto es ruido simétrico.
+        </p>
+      </div>
+
+      <div class="note">
+        <h3><em>06</em> Una primaria por tarjeta</h3>
+        <p>
+          <code>OPEN</code>, <code>PULL</code> y <code>LAUNCH</code> con el mismo ancho y peso obligaban
+          a leer los tres. Se mantiene la regla que ya tenías —tinta rellena = primaria, filete =
+          secundaria, rojo = destructiva— pero ahora la tarjeta apagada solo tiene
+          <code>LAUNCH</code> relleno y la viva solo <code>STOP</code> en rojo. Un proyecto sin compose
+          se queda en dos líneas y un botón.
+        </p>
+      </div>
+    </aside>
+  </div>
+</div>
