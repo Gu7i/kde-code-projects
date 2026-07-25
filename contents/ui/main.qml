@@ -15,32 +15,47 @@ PlasmoidItem {
     preferredRepresentation: compactRepresentation
 
     // ── Theme ──────────────────────────────────────────────────────────────
-    readonly property color clrBg:     "#c0c0c0"
-    readonly property color clrCard:   "#d4d4d4"
-    readonly property color clrHdr:    "#111111"
-    readonly property color clrBorder: "#111111"
-    readonly property color clrText:   "#111111"
-    readonly property color clrSub:    "#333333"
-    readonly property color clrMuted:  "#666666"
+    // Grises con un sesgo mínimo hacia el verde de señal: un gris puro se lee
+    // como "no elegido".
+    readonly property color clrBg:     "#b6b6b2"
+    readonly property color clrCard:   "#d6d6d1"
+    readonly property color clrShell:  "#c5c5c0"  // barras de herramientas y pie
+    readonly property color clrPanel:  "#cacac5"  // panel de servicios
+    readonly property color clrBorder: "#131410"
+    readonly property color clrText:   "#131410"
+    readonly property color clrSub:    "#3c3d35"  // valores secundarios (ruta, estado)
+    readonly property color clrMuted:  "#5c5d53"  // etiquetas — 4.6:1 sobre clrCard
 
     // Regla 1: el verde significa una sola cosa — "esto está vivo".
     // Regla 2: verde de señal, no verde puro; deja de vibrar sobre el gris.
-    readonly property color clrGreen:   "#2fbf4a"  // relleno: raíl, badge, punto de servicio
-    readonly property color clrGreenTx: "#0f5c22"  // el mismo verde, legible sobre gris claro
-    readonly property color clrOnGreen: "#062f10"  // texto sobre relleno verde
+    readonly property color clrGreen:   "#1f9c3e"  // relleno: raíl, badge, punto de servicio
+    readonly property color clrGreenTx: "#0b5220"  // el mismo verde, legible sobre gris claro
+    readonly property color clrOnGreen: "#05300f"  // texto sobre relleno verde
 
     // Regla 3: tres rangos de botón. Tinta = primaria, filete = secundaria, rojo = destructiva.
-    readonly property color clrInk:  "#111111"    // acción primaria y toggle activo
-    readonly property color clrRed:  "#a32d16"
+    readonly property color clrInk:  "#131410"    // acción primaria y toggle activo
+    readonly property color clrRed:  "#9c2b15"
     readonly property color clrBtn:  "transparent" // los secundarios se definen por el filete
-    readonly property color clrHair: "#70111111"   // filete de 1 px (negro al 44%)
+    readonly property color clrHair:  "#33131410"  // filete de 1 px (tinta al 20%)
+    readonly property color clrHair2: "#73131410"  // divisoria estructural (tinta al 45%)
 
-    readonly property string mono:     "Courier New"
+    // Courier New tiene el trazo tan fino que a 9-10 px se deshace sobre gris.
+    // Se elige la primera mono de verdad que haya instalada.
+    readonly property string mono: {
+        var prefs = ["JetBrainsMono Nerd Font", "JetBrains Mono", "Hack",
+                     "Fira Code", "Noto Sans Mono", "DejaVu Sans Mono",
+                     "Liberation Mono", "Monospace"]
+        var avail = Qt.fontFamilies()
+        for (var i = 0; i < prefs.length; i++)
+            if (avail.indexOf(prefs[i]) >= 0) return prefs[i]
+        return "Monospace"
+    }
+
     // font sizes
     readonly property int fzTiny:   8
     readonly property int fzSmall:  9   // Regla 4: etiquetas — peso normal, gris
     readonly property int fzNormal: 10
-    readonly property int fzValue:  12  // Regla 4: valores — negrita, tinta
+    readonly property int fzValue:  11  // Regla 4: valores — negrita, tinta
     readonly property int fzLarge:  13
 
     // ── DataSource ─────────────────────────────────────────────────────────
@@ -120,13 +135,57 @@ PlasmoidItem {
     compactRepresentation: MouseArea {
         hoverEnabled: true
         onClicked: root.expanded = !root.expanded
-        Kirigami.Icon {
+        // "</>" dibujado, no escrito: en mono la barra es más alta que los
+        // ángulos y el conjunto queda desparejo. Con trazos propios los tres
+        // elementos comparten peso y altura, y aguanta cualquier tamaño de panel.
+        Canvas {
+            id: glyph
             anchors.centerIn: parent
-            source: "code-context"
-            width: Math.min(parent.width, parent.height) * 0.85
+            // 0.8 de la caja: es la proporción que ocupa un icono del tema en el
+            // panel. A caja completa la marca sale más grande que sus vecinas.
+            width:  Math.round(Math.min(parent.width, parent.height) * 0.8)
             height: width
+
+            // Cantos vivos, como el resto del widget: sin remates redondeados.
+            property color stroke: Kirigami.Theme.textColor
+            onStrokeChanged: requestPaint()
+            onWidthChanged:  requestPaint()
+
             opacity: parent.containsMouse ? 0.7 : 1.0
             Behavior on opacity { NumberAnimation { duration: 100 } }
+
+            onPaint: {
+                var ctx = getContext("2d")
+                var s = width
+                ctx.reset()
+                ctx.strokeStyle = stroke
+                // Redondeado a píxel entero y al peso de Breeze (~2 px a 24 px de
+                // icono): en decimales el antialias engorda el trazo.
+                ctx.lineWidth   = Math.max(1, Math.round(s * 0.075))
+                ctx.lineCap     = "butt"
+                ctx.lineJoin    = "miter"
+
+                var p  = s * 0.11          // aire alrededor
+                var w  = s - 2 * p
+                var h  = w * 0.58          // alto: el mismo para los tres trazos
+                var mid = s / 2
+                var top = mid - h / 2, bot = mid + h / 2
+
+                // Los huecos barra↔ángulo valen ~1.5 veces el grosor del trazo:
+                // menos que eso y los tres elementos se leen como una mancha.
+                ctx.beginPath()
+                ctx.moveTo(p + w * 0.27, top)   // ángulo izquierdo
+                ctx.lineTo(p,            mid)
+                ctx.lineTo(p + w * 0.27, bot)
+
+                ctx.moveTo(p + w * 0.73, top)   // ángulo derecho
+                ctx.lineTo(p + w,        mid)
+                ctx.lineTo(p + w * 0.73, bot)
+
+                ctx.moveTo(p + w * 0.555, top)  // barra
+                ctx.lineTo(p + w * 0.445, bot)
+                ctx.stroke()
+            }
         }
     }
 
@@ -179,9 +238,6 @@ PlasmoidItem {
             for (var i = 0; i < keys.length; i++) if (projectRunningStates[keys[i]]) n++
             return n
         }
-        property int offlineCount: {
-            return Math.max(0, Plasmoid.configuration.projects.length - runningCount)
-        }
 
         ColumnLayout {
             anchors.fill: parent
@@ -190,7 +246,7 @@ PlasmoidItem {
             // ── HEADER ──────────────────────────────────────────────────────
             Rectangle {
                 Layout.fillWidth: true
-                height: 76
+                height: 64
                 color: root.clrCard
 
                 Rectangle {
@@ -201,105 +257,76 @@ PlasmoidItem {
 
                 RowLayout {
                     anchors.fill: parent
-                    anchors.leftMargin: 8
-                    anchors.rightMargin: 8
-                    spacing: 0
+                    anchors.leftMargin: 12
+                    anchors.rightMargin: 12
+                    spacing: 12
 
-                    // Barcode + title
+                    // Barcode — o se ve, o no está: a tinta plena. Su matrícula
+                    // se muda al pie, donde se puede leer.
                     Row {
-                        spacing: 6
-                        Layout.fillWidth: true
-
-                        // Barcode — textura, no dato: se queda por detrás del contenido
-                        Column {
-                            anchors.verticalCenter: parent.verticalCenter
-                            spacing: 2
-                            opacity: 0.32
-                            Row {
-                                spacing: 0
-                                property var bars: [2,1,4,1,2,1,3,1,2,4,1,2,1,3,2,1]
-                                Repeater {
-                                    model: parent.bars.length
-                                    Rectangle {
-                                        width: parent.bars[index]; height: 34
-                                        color: index % 2 === 0 ? root.clrHdr : "transparent"
-                                    }
-                                }
-                            }
-                            Text {
-                                text: "1 04-52-900"
-                                font.family: root.mono; font.pixelSize: 7
-                                color: root.clrSub
-                            }
-                        }
-
-                        // Title
-                        Column {
-                            anchors.verticalCenter: parent.verticalCenter
-                            spacing: 4
-                            Text {
-                                text: "DEV PROJECTS"
-                                font.family: root.mono; font.pixelSize: 15
-                                font.bold: true; font.letterSpacing: 2
-                                color: root.clrText
-                            }
-                            Text {
-                                text: "PLASMA WIDGET  //  PROJECT LAUNCHER"
-                                font.family: root.mono; font.pixelSize: root.fzSmall
-                                font.letterSpacing: 1.4; color: root.clrMuted
+                        Layout.alignment: Qt.AlignVCenter
+                        spacing: 0
+                        property var bars: [2,1,4,2,1,1,3,2,1,1,2,3,4,1,1,2,2,1,3]
+                        Repeater {
+                            model: parent.bars.length
+                            Rectangle {
+                                width: parent.bars[index]; height: 30
+                                color: index % 2 === 0 ? root.clrInk : "transparent"
                             }
                         }
                     }
 
-                    // Stats — etiqueta gris y ligera, cifra en tinta (Regla 4).
-                    // El único verde de la cabecera es el punto de "hay algo vivo" (Regla 1).
-                    Rectangle { width: 1; Layout.fillHeight: true; color: root.clrHair }
-
+                    // Title
                     Column {
-                        width: 58; Layout.alignment: Qt.AlignVCenter
-                        leftPadding: 10
-                        spacing: 2
-                        Text { text: "TOTAL"; font.family: root.mono; font.pixelSize: root.fzSmall; font.letterSpacing: 1.6; color: root.clrMuted }
+                        Layout.fillWidth: true
+                        Layout.alignment: Qt.AlignVCenter
+                        spacing: 5
                         Text {
-                            text: Plasmoid.configuration.projects.length.toString().padStart(2, "0")
-                            font.family: root.mono; font.pixelSize: 24; font.bold: true
+                            text: "DEV PROJECTS"
+                            font.family: root.mono; font.pixelSize: 16
+                            font.bold: true; font.letterSpacing: 2.4
                             color: root.clrText
                         }
-                    }
-
-                    Rectangle { width: 1; Layout.fillHeight: true; color: root.clrHair }
-
-                    Column {
-                        width: 74; Layout.alignment: Qt.AlignVCenter
-                        leftPadding: 10
-                        spacing: 2
-                        Text { text: "ACTIVOS"; font.family: root.mono; font.pixelSize: root.fzSmall; font.letterSpacing: 1.6; color: root.clrMuted }
-                        Row {
-                            spacing: 6
-                            Rectangle {
-                                width: 9; height: 9; color: root.clrGreen
-                                anchors.verticalCenter: parent.verticalCenter
-                                visible: fullRep.runningCount > 0
-                            }
-                            Text {
-                                text: fullRep.runningCount.toString().padStart(2, "0")
-                                font.family: root.mono; font.pixelSize: 24; font.bold: true
-                                color: fullRep.runningCount > 0 ? root.clrGreenTx : root.clrMuted
-                            }
+                        Text {
+                            text: "PROJECT LAUNCHER"
+                            font.family: root.mono; font.pixelSize: root.fzSmall
+                            font.letterSpacing: 1.8; color: root.clrMuted
                         }
                     }
 
-                    Rectangle { width: 1; Layout.fillHeight: true; color: root.clrHair }
+                    Rectangle {
+                        width: 1; Layout.fillHeight: true
+                        Layout.topMargin: 12; Layout.bottomMargin: 14
+                        color: root.clrHair2
+                    }
 
-                    Column {
-                        width: 52; Layout.alignment: Qt.AlignVCenter
-                        leftPadding: 10
-                        spacing: 2
-                        Text { text: "OFF"; font.family: root.mono; font.pixelSize: root.fzSmall; font.letterSpacing: 1.6; color: root.clrMuted }
+                    // Un solo readout: activos sobre total, alineado a la derecha.
+                    // OFF era aritmética (total − activos), no un dato.
+                    ColumnLayout {
+                        Layout.alignment: Qt.AlignVCenter
+                        spacing: 3
+
+                        RowLayout {
+                            Layout.alignment: Qt.AlignRight
+                            spacing: 0
+                            Text {
+                                Layout.alignment: Qt.AlignBaseline
+                                text: fullRep.runningCount.toString().padStart(2, "0")
+                                font.family: root.mono; font.pixelSize: 26; font.bold: true
+                                color: fullRep.runningCount > 0 ? root.clrGreenTx : root.clrMuted
+                            }
+                            Text {
+                                Layout.alignment: Qt.AlignBaseline
+                                text: "/" + Plasmoid.configuration.projects.length.toString().padStart(2, "0")
+                                font.family: root.mono; font.pixelSize: 15
+                                color: root.clrMuted
+                            }
+                        }
                         Text {
-                            text: fullRep.offlineCount.toString().padStart(2, "0")
-                            font.family: root.mono; font.pixelSize: 24; font.bold: true
-                            color: root.clrMuted
+                            Layout.alignment: Qt.AlignRight
+                            text: "ACTIVOS / TOTAL"
+                            font.family: root.mono; font.pixelSize: root.fzTiny
+                            font.letterSpacing: 1.6; color: root.clrMuted
                         }
                     }
                 }
@@ -309,9 +336,9 @@ PlasmoidItem {
             Rectangle {
                 Layout.fillWidth: true
                 height: 36
-                color: "#cacaca"
+                color: root.clrShell
 
-                Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: root.clrBorder }
+                Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: root.clrHair2 }
 
                 RowLayout {
                     anchors.fill: parent
@@ -379,8 +406,8 @@ PlasmoidItem {
                 Layout.fillWidth: true
                 height: fullRep.searchVisible ? 30 : 0
                 visible: fullRep.searchVisible
-                color: "#b8b8b8"
-                border.color: root.clrHair; border.width: 1
+                color: "#bfbfba"
+                border.color: root.clrHair2; border.width: 1
                 clip: true
 
                 RowLayout {
@@ -473,10 +500,25 @@ PlasmoidItem {
                             property bool isExpanded: false
                             property var  containerList: []
 
-                            // "Vivo" es lo único que gana barra negra y verde (Reglas 1 y 4).
-                            readonly property bool  live:        isRunning || isStarting
-                            readonly property color hdrFg:       live ? "#ffffff" : root.clrText
-                            readonly property color hdrFgMuted:  live ? "#8a8a8a" : root.clrMuted
+                            // "Vivo" es lo único que gana filete verde y borde en tinta (Reglas 1 y 4).
+                            readonly property bool live: isRunning || isStarting
+
+                            // Puertos publicados, sin repetir, para la fila de meta.
+                            readonly property var portsList: {
+                                var seen = {}, out = []
+                                for (var i = 0; i < containerList.length; i++) {
+                                    var re = /:(\d+)->/g, m, s = containerList[i].ports || ""
+                                    while ((m = re.exec(s)) !== null)
+                                        if (!seen[m[1]]) { seen[m[1]] = true; out.push(":" + m[1]) }
+                                }
+                                return out
+                            }
+                            // Seis puertos en fila son ruido: se enseñan tres y el resto
+                            // se cuenta. La lista completa va en el tooltip.
+                            readonly property string portsLabel: {
+                                if (portsList.length <= 3) return portsList.join("  ")
+                                return portsList.slice(0, 3).join("  ") + "  +" + (portsList.length - 3)
+                            }
 
                             onIsRunningChanged:  fullRep.setProjectRunning(origIndex, isRunning || isStarting)
                             onIsStartingChanged: fullRep.setProjectRunning(origIndex, isRunning || isStarting)
@@ -582,7 +624,12 @@ PlasmoidItem {
                             Timer {
                                 id: refreshTimer; interval: 3000; repeat: true
                                 running: root.expanded && dockerFiles.count > 0 && !projectItem.isStarting && !projectItem.isLoading
-                                onTriggered: { projectItem.checkStatus(); if (projectItem.isExpanded) projectItem.fetchContainers() }
+                                // También en plegado: la fila de meta necesita cuántos
+                                // servicios y qué puertos hay vivos.
+                                onTriggered: {
+                                    projectItem.checkStatus()
+                                    if (projectItem.isExpanded || projectItem.isRunning) projectItem.fetchContainers()
+                                }
                             }
                             Timer {
                                 id: startupPollTimer; interval: 1000; repeat: true
@@ -626,37 +673,40 @@ PlasmoidItem {
                                 opacity: fullRep.draggedIndex === origIndex ? 0.3 : 1.0
                                 Behavior on opacity { NumberAnimation { duration: 100 } }
 
-                                // Green left accent when running
+                                // Filete verde: el estado se escanea sin leer, y sin
+                                // gastar una barra negra ni una fila entera en decirlo.
                                 Rectangle {
                                     visible: projectItem.live
-                                    x: 0; y: 0; width: 5; height: parent.height
+                                    x: 0; y: 0; width: 4; height: parent.height
                                     color: root.clrGreen
                                     z: 1
+                                    // Arrancando: el filete late. Es el indeterminado
+                                    // que antes fingía la barra de STATUS al 45%.
+                                    SequentialAnimation on opacity {
+                                        running: projectItem.isStarting; loops: Animation.Infinite
+                                        alwaysRunToEnd: true
+                                        NumberAnimation { to: 0.25; duration: 600; easing.type: Easing.InOutQuad }
+                                        NumberAnimation { to: 1.0;  duration: 600; easing.type: Easing.InOutQuad }
+                                    }
                                 }
 
                                 Column {
                                     id: cardCol
                                     width: parent.width
+                                    topPadding: 9
+                                    // El panel de servicios va a hueso con el borde inferior
+                                    bottomPadding: (projectItem.isExpanded && projectItem.live) ? 0 : 9
+                                    spacing: 5
 
-                                    // ── Card header bar ───────────────────────
-                                    // La barra negra deja de ser decoración: solo la lleva
-                                    // el proyecto vivo, así el estado se escanea sin leer.
-                                    Rectangle {
-                                        width: parent.width; height: 30
-                                        color: projectItem.live ? root.clrHdr : "transparent"
-
-                                        Rectangle {
-                                            visible: !projectItem.live
-                                            anchors.bottom: parent.bottom
-                                            width: parent.width; height: 1
-                                            color: root.clrHair
-                                        }
+                                    // ── Nombre + estado ───────────────────────
+                                    Item {
+                                        width: parent.width; height: 22
 
                                         RowLayout {
                                             anchors.fill: parent
-                                            anchors.leftMargin: 10
-                                            anchors.rightMargin: 8
-                                            spacing: 6
+                                            anchors.leftMargin: 12
+                                            anchors.rightMargin: 10
+                                            spacing: 8
 
                                             // Drag handle
                                             Item {
@@ -669,8 +719,7 @@ PlasmoidItem {
                                                         model: 3
                                                         Rectangle {
                                                             width: 14; height: 2
-                                                            color: dragArea.containsMouse ? projectItem.hdrFg
-                                                                                          : projectItem.hdrFgMuted
+                                                            color: dragArea.containsMouse ? root.clrText : root.clrMuted
                                                         }
                                                     }
                                                 }
@@ -703,34 +752,25 @@ PlasmoidItem {
                                                 }
                                             }
 
-                                            // PROJECT_ID nombre — la etiqueta se aparta,
-                                            // el nombre es lo que buscas al abrir el widget (Regla 4)
-                                            RowLayout {
+                                            // El nombre es lo que buscas al abrir el widget:
+                                            // se queda solo, sin etiqueta que le compita.
+                                            Text {
                                                 Layout.fillWidth: true
-                                                spacing: 8
-                                                Text {
-                                                    text: "PROJECT_ID"
-                                                    font.family: root.mono; font.pixelSize: root.fzSmall
-                                                    font.letterSpacing: 1.6
-                                                    color: projectItem.hdrFgMuted
-                                                }
-                                                Text {
-                                                    Layout.fillWidth: true
-                                                    text: root.projectName(projectPath).toUpperCase()
-                                                    font.family: root.mono; font.pixelSize: 11
-                                                    font.bold: true; font.letterSpacing: 1.2
-                                                    color: projectItem.hdrFg
-                                                    elide: Text.ElideRight
-                                                }
+                                                text: root.projectName(projectPath).toUpperCase()
+                                                font.family: root.mono; font.pixelSize: root.fzLarge
+                                                font.bold: true; font.letterSpacing: 0.9
+                                                color: projectItem.live ? root.clrText : root.clrSub
+                                                elide: Text.ElideRight
                                             }
 
                                             // Status badge — relleno verde solo si vive;
                                             // apagado = filete gris, sin peso (Reglas 1 y 3)
                                             Rectangle {
-                                                Layout.preferredWidth: badgeTxt.implicitWidth + 18
-                                                Layout.preferredHeight: 20
-                                                color:        projectItem.live ? root.clrGreen : "transparent"
-                                                border.color: projectItem.live ? root.clrGreen : projectItem.hdrFgMuted
+                                                Layout.preferredWidth: badgeTxt.implicitWidth + 16
+                                                Layout.preferredHeight: 19
+                                                color:        projectItem.isRunning ? root.clrGreen : "transparent"
+                                                border.color: projectItem.isRunning ? root.clrGreen :
+                                                              projectItem.live      ? root.clrInk   : root.clrHair2
                                                 border.width: 1
                                                 Text {
                                                     id: badgeTxt
@@ -740,7 +780,8 @@ PlasmoidItem {
                                                           projectItem.isLoading  ? "LOADING"  : "OFFLINE"
                                                     font.family: root.mono; font.pixelSize: root.fzSmall
                                                     font.bold: projectItem.live; font.letterSpacing: 1.6
-                                                    color: projectItem.live ? root.clrOnGreen : projectItem.hdrFgMuted
+                                                    color: projectItem.isRunning ? root.clrOnGreen :
+                                                           projectItem.live      ? root.clrText    : root.clrMuted
                                                 }
                                             }
 
@@ -752,8 +793,8 @@ PlasmoidItem {
                                                 Text {
                                                     anchors.centerIn: parent
                                                     text: projectItem.isExpanded ? "▲" : "▼"
-                                                    font.family: root.mono; font.pixelSize: 11
-                                                    color: projectItem.hdrFgMuted
+                                                    font.family: root.mono; font.pixelSize: 10
+                                                    color: root.clrMuted
                                                 }
                                                 MouseArea {
                                                     anchors.fill: parent
@@ -770,61 +811,30 @@ PlasmoidItem {
                                     // ── Card body ─────────────────────────────
                                     Item {
                                         width: parent.width
-                                        implicitHeight: bodyLayout.implicitHeight + 16
+                                        implicitHeight: bodyLayout.implicitHeight
 
                                         RowLayout {
                                             id: bodyLayout
-                                            x: 14; y: 8
-                                            width: parent.width - 20
-                                            spacing: 8
+                                            x: 12
+                                            width: parent.width - 22
+                                            spacing: 10
 
-                                            // Info column (izquierda)
+                                            // Info column (izquierda) — centrada contra la
+                                            // pila de botones, que es más alta que el texto
                                             ColumnLayout {
                                                 Layout.fillWidth: true
-                                                Layout.alignment: Qt.AlignTop
-                                                spacing: 6
+                                                Layout.minimumWidth: 0
+                                                Layout.alignment: Qt.AlignVCenter
+                                                spacing: 5
 
-                                                // PATH
-                                                RowLayout {
-                                                    spacing: 6
-                                                    Text {
-                                                        text: "PATH"; Layout.preferredWidth: 60
-                                                        font.family: root.mono; font.pixelSize: root.fzSmall
-                                                        font.letterSpacing: 1.6; color: root.clrMuted
-                                                    }
-                                                    Text {
-                                                        Layout.fillWidth: true
-                                                        text: projectPath.replace(/^\/home\/[^/]+/, "~")
-                                                        font.family: root.mono; font.pixelSize: root.fzValue
-                                                        font.bold: true; color: root.clrText
-                                                        elide: Text.ElideMiddle
-                                                    }
-                                                }
-
-                                                // STATUS BAR
-                                                RowLayout {
-                                                    spacing: 6
-                                                    Text {
-                                                        text: "STATUS"; Layout.preferredWidth: 60
-                                                        font.family: root.mono; font.pixelSize: root.fzSmall
-                                                        font.letterSpacing: 1.6; color: root.clrMuted
-                                                    }
-                                                    Rectangle {
-                                                        Layout.fillWidth: true; Layout.preferredHeight: 5
-                                                        color: "#20111111"; border.color: root.clrHair; border.width: 1
-                                                        Rectangle {
-                                                            x: 1; y: 1
-                                                            height: parent.height - 2
-                                                            color: projectItem.live ? root.clrGreen : root.clrMuted
-                                                            width: projectItem.isRunning  ? parent.width - 2 :
-                                                                   projectItem.isStarting ? (parent.width - 2) * 0.45 : 0
-                                                            Behavior on width { NumberAnimation { duration: 400; easing.type: Easing.InOutQuad } }
-                                                        }
-                                                    }
-                                                    PlasmaComponents.BusyIndicator {
-                                                        Layout.preferredWidth: 14; Layout.preferredHeight: 14
-                                                        running: projectItem.isLoading; visible: projectItem.isLoading
-                                                    }
+                                                // Ruta — se reconoce por empezar en ~/;
+                                                // la etiqueta PATH no aportaba nada
+                                                Text {
+                                                    Layout.fillWidth: true
+                                                    text: projectPath.replace(/^\/home\/[^/]+/, "~")
+                                                    font.family: root.mono; font.pixelSize: root.fzValue
+                                                    color: root.clrSub
+                                                    elide: Text.ElideMiddle
                                                 }
 
                                                 // EDITOR row
@@ -832,7 +842,7 @@ PlasmoidItem {
                                                     visible: fullRep.editorSelectorEnabled
                                                     spacing: 6
                                                     Text {
-                                                        text: "EDITOR"; Layout.preferredWidth: 60
+                                                        text: "EDITOR"; Layout.preferredWidth: 46
                                                         font.family: root.mono; font.pixelSize: root.fzSmall
                                                         font.letterSpacing: 1.6; color: root.clrMuted
                                                     }
@@ -880,27 +890,29 @@ PlasmoidItem {
                                                     }
                                                 }
 
-                                                // FILE row
+                                                // META row — el compose se reconoce por acabar
+                                                // en .yml; lo que sí hace falta saber es qué hay
+                                                // vivo y en qué puerto.
                                                 RowLayout {
                                                     visible: dockerFiles.count > 0
-                                                    spacing: 6
-                                                    Text {
-                                                        text: "FILE"; Layout.preferredWidth: 60
-                                                        font.family: root.mono; font.pixelSize: root.fzSmall
-                                                        font.letterSpacing: 1.6; color: root.clrMuted
-                                                    }
+                                                    Layout.fillWidth: true
+                                                    spacing: 8
                                                     Rectangle {
                                                         id: fileBtn
-                                                        implicitWidth: fileTxt.implicitWidth + 32; implicitHeight: 22
+                                                        implicitWidth: fileTxt.implicitWidth + (dockerFiles.count > 1 ? 26 : 0)
+                                                        implicitHeight: 20
                                                         color: "transparent"
                                                         border.color: dockerFiles.count > 1 ? root.clrHair : "transparent"
                                                         border.width: 1
                                                         RowLayout {
-                                                            anchors.fill: parent; anchors.leftMargin: 8; anchors.rightMargin: 6; spacing: 4
+                                                            anchors.fill: parent
+                                                            anchors.leftMargin: dockerFiles.count > 1 ? 7 : 0
+                                                            anchors.rightMargin: dockerFiles.count > 1 ? 5 : 0
+                                                            spacing: 4
                                                             Text {
                                                                 id: fileTxt; Layout.fillWidth: true
                                                                 text: projectItem.composeFileNames.length > 0 ? projectItem.composeFileNames[projectItem.selectedComposeIndex] : "—"
-                                                                font.family: root.mono; font.pixelSize: root.fzValue; font.bold: true; color: root.clrText
+                                                                font.family: root.mono; font.pixelSize: root.fzNormal; color: root.clrSub
                                                             }
                                                             Text { visible: dockerFiles.count > 1; text: "▾"; font.family: root.mono; font.pixelSize: 9; color: root.clrMuted }
                                                         }
@@ -947,6 +959,47 @@ PlasmoidItem {
                                                             }
                                                         }
                                                     }
+
+                                                    // Servicios vivos y puertos publicados
+                                                    Rectangle {
+                                                        visible: projectItem.isRunning && projectItem.containerList.length > 0
+                                                        Layout.preferredWidth: 7; Layout.preferredHeight: 7
+                                                        color: root.clrGreen
+                                                    }
+                                                    Text {
+                                                        visible: projectItem.isRunning && projectItem.containerList.length > 0
+                                                        text: projectItem.containerList.length + " SVC"
+                                                        font.family: root.mono; font.pixelSize: root.fzNormal
+                                                        font.bold: true; color: root.clrSub
+                                                    }
+                                                    // fillWidth + minimumWidth 0: si no, el ancho
+                                                    // implícito de la lista empuja los botones
+                                                    // fuera de la tarjeta.
+                                                    Text {
+                                                        Layout.fillWidth: true
+                                                        Layout.minimumWidth: 0
+                                                        visible: projectItem.isRunning && projectItem.portsList.length > 0
+                                                        text: projectItem.portsLabel
+                                                        font.family: root.mono; font.pixelSize: root.fzNormal
+                                                        color: root.clrMuted
+                                                        elide: Text.ElideRight
+                                                        HoverHandler { id: portsHov }
+                                                        PlasmaComponents.ToolTip {
+                                                            text: projectItem.portsList.join("   ")
+                                                            visible: portsHov.hovered && projectItem.portsList.length > 3
+                                                        }
+                                                    }
+
+                                                    PlasmaComponents.BusyIndicator {
+                                                        Layout.preferredWidth: 13; Layout.preferredHeight: 13
+                                                        running: projectItem.isLoading; visible: projectItem.isLoading
+                                                    }
+
+                                                    Item {
+                                                        Layout.fillWidth: true
+                                                        Layout.minimumWidth: 0
+                                                        visible: !(projectItem.isRunning && projectItem.portsList.length > 0)
+                                                    }
                                                 }
 
                                                 // DELETE (abajo de la info)
@@ -964,13 +1017,13 @@ PlasmoidItem {
                                             // Botones columna (derecha)
                                             ColumnLayout {
                                                 Layout.alignment: Qt.AlignTop
-                                                spacing: 4
+                                                spacing: 3
 
                                                 // OPEN — secundaria: solo filete (Regla 3)
                                                 Rectangle {
                                                     Layout.preferredWidth: 84; Layout.preferredHeight: 22
                                                     color: root.clrBtn; border.color: root.clrHair; border.width: 1
-                                                    Text { anchors.centerIn: parent; text: "OPEN"; font.family: root.mono; font.pixelSize: 10; font.letterSpacing: 0.6; color: root.clrText }
+                                                    Text { anchors.centerIn: parent; text: "OPEN"; font.family: root.mono; font.pixelSize: 10; font.letterSpacing: 0.6; color: root.clrSub }
                                                     HoverHandler { id: openHov }
                                                     MouseArea {
                                                         anchors.fill: parent
@@ -984,7 +1037,7 @@ PlasmoidItem {
                                                     visible: dockerFiles.count > 0 && !projectItem.isLoading && !projectItem.isStarting
                                                     Layout.preferredWidth: 84; Layout.preferredHeight: 22
                                                     color: root.clrBtn; border.color: root.clrHair; border.width: 1
-                                                    Text { anchors.centerIn: parent; text: "↓ PULL"; font.family: root.mono; font.pixelSize: 10; font.letterSpacing: 0.6; color: root.clrText }
+                                                    Text { anchors.centerIn: parent; text: "↓ PULL"; font.family: root.mono; font.pixelSize: 10; font.letterSpacing: 0.6; color: root.clrSub }
                                                     HoverHandler { id: pullHov }
                                                     MouseArea {
                                                         anchors.fill: parent
@@ -1041,12 +1094,13 @@ PlasmoidItem {
                                         visible: projectItem.isExpanded && (projectItem.isRunning || projectItem.isStarting)
                                         width: parent.width
                                         implicitHeight: visible ? servicesPanelCol.implicitHeight : 0
-                                        color: "#c8c8c8"
+                                        color: root.clrPanel
                                         border.color: root.clrHair; border.width: 1
 
                                         Column {
                                             id: servicesPanelCol
                                             width: parent.width
+                                            topPadding: 4
 
                                             // Panel header — un contador no es un estado:
                                             // deja de ir en verde y pasa a ser solo cifra (Regla 1)
@@ -1198,23 +1252,11 @@ PlasmoidItem {
                                                 }
                                             }
 
-                                            // Panel footer
-                                            Rectangle {
-                                                width: parent.width; height: 24; color: "transparent"
-                                                Rectangle {
-                                                    anchors.top: parent.top
-                                                    width: parent.width; height: 1; color: root.clrHair; opacity: 0.5
-                                                }
-                                                Text {
-                                                    anchors.centerIn: parent
-                                                    text: "COMPOSE: " + (projectItem.composeFileNames.length > 0 ? projectItem.composeFileNames[projectItem.selectedComposeIndex] : "—")
-                                                    font.family: root.mono; font.pixelSize: root.fzSmall; font.letterSpacing: 1.6; color: root.clrMuted
-                                                }
-                                            }
+                                            // El compose ya está en la fila de meta de la
+                                            // tarjeta: repetirlo aquí era decorar el hueco.
+                                            Item { width: 1; height: 4 }
                                         }
                                     }
-
-                                    Item { width: 1; height: 4 }
                                 }
                             }
 
@@ -1233,39 +1275,39 @@ PlasmoidItem {
             // ── FOOTER ──────────────────────────────────────────────────────
             Rectangle {
                 Layout.fillWidth: true
-                height: 42; color: "#c8c8c8"
+                height: 34; color: root.clrShell
 
                 Rectangle { anchors.top: parent.top; width: parent.width; height: 2; color: root.clrBorder }
 
                 RowLayout {
-                    anchors.fill: parent; anchors.leftMargin: 10; anchors.rightMargin: 10; spacing: 8
+                    anchors.fill: parent; anchors.leftMargin: 12; anchors.rightMargin: 12; spacing: 10
 
+                    // Un código, no dos: dos adornos idénticos flanqueando el texto
+                    // son ruido simétrico. Y a tinta, para que sea un grafismo.
                     Row {
+                        Layout.alignment: Qt.AlignVCenter
                         spacing: 0
-                        opacity: 0.32
                         property var bars: [1,3,1,2,4,1,2,1,3,2,1,4,1,2]
                         Repeater {
                             model: parent.bars.length
-                            Rectangle { width: parent.bars[index]; height: 24; color: index % 2 === 0 ? root.clrBorder : "transparent" }
+                            Rectangle { width: parent.bars[index]; height: 18; color: index % 2 === 0 ? root.clrInk : "transparent" }
                         }
                     }
 
-                    Column {
-                        spacing: 3
-                        Text { text: "KDE::PLASMA PROJECT LAUNCHER"; font.family: root.mono; font.pixelSize: root.fzSmall; font.letterSpacing: 1.8; color: root.clrMuted }
-                        Text { text: "1 094-72-601  //  v2.0"; font.family: root.mono; font.pixelSize: root.fzSmall; font.letterSpacing: 1; color: root.clrMuted }
+                    Text {
+                        Layout.alignment: Qt.AlignVCenter
+                        text: "KDE::PLASMA PROJECT LAUNCHER"
+                        font.family: root.mono; font.pixelSize: root.fzSmall
+                        font.letterSpacing: 1.8; color: root.clrMuted
                     }
 
                     Item { Layout.fillWidth: true }
 
-                    Row {
-                        spacing: 0
-                        opacity: 0.32
-                        property var bars: [2,1,3,1,2,4,1,2,1,3,1,2,1,3]
-                        Repeater {
-                            model: parent.bars.length
-                            Rectangle { width: parent.bars[index]; height: 24; color: index % 2 === 0 ? root.clrBorder : "transparent" }
-                        }
+                    Text {
+                        Layout.alignment: Qt.AlignVCenter
+                        text: "094-72-601  ·  v2.0"
+                        font.family: root.mono; font.pixelSize: root.fzSmall
+                        font.letterSpacing: 1; color: root.clrMuted
                     }
                 }
             }
