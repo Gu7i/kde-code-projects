@@ -38,8 +38,10 @@
     --pg-acc:  #1f7a36;
   }
 
-  /* ── Widget: compromiso deliberado con un solo look (es un producto de
-        tema fijo, gris industrial). No invierte con el tema del visor. ────── */
+  /* ── Widget: dos paletas, un solo sistema. Lo que cambia es qué es tinta y
+        qué es papel; las reglas (tinta = primaria, verde = vivo, rojo =
+        destructiva) no se tocan. En "auto" sigue al visor, igual que el
+        plasmoide sigue al esquema de color de Plasma. ──────────────────────── */
   .w {
     --ground:  #b6b6b2;
     --card:    #d6d6d1;
@@ -49,11 +51,52 @@
     --ink-2:   #3c3d35;   /* valores secundarios: antes #333 pero con peso real */
     --ink-3:   #5c5d53;   /* etiquetas: sube de #666 a #5c5d53 + no van a 9 px */
     --live:    #1f9c3e;
+    --live-dim: rgba(31,156,62,.25);
     --live-tx: #0b5220;
     --on-live: #05300f;
+    --live-bd: var(--ink);
     --red:     #9c2b15;
     --rule:    rgba(19,20,16,.20);
     --rule-2:  rgba(19,20,16,.45);
+    --frame:   rgba(0,0,0,.45);
+    --edge:    transparent;  /* en claro el salto de valor ya basta */
+    --band:    var(--ink);   /* filete de cabecera y pie */
+    --band-w:  2px;
+    --bar-op:  1;
+    --pri-bg:  var(--ink);   /* primaria: tinta rellena */
+    --pri-bd:  var(--ink);
+    --pri-tx:  #ffffff;
+    --pri-edge: transparent;
+  }
+
+  /* Paleta oscura — el chasis de kde-devcommands. No se invierte la tinta:
+     planos casi negros con tinte verde, poco salto entre ellos, y la
+     profundidad en 1 px de luz arriba. Ver mockup-dark.html para el porqué. */
+  .w.dark {
+    --ground:  #131715;   /* clrSunken · bandeja */
+    --card:    #222724;   /* clrRaised · tarjeta y cabecera */
+    --shell:   #181c1a;   /* clrSurface · barras y pie */
+    --panel:   #1b201e;
+    --ink:     #e3e8e4;   /* 12,3:1 sobre --card */
+    --ink-2:   #b0b9b4;   /* 7,5:1 */
+    --ink-3:   #8b948e;   /* 4,9:1 */
+    --live:    #2fe07a;   /* clrAccent · 8,7:1, vale de relleno y de texto */
+    --live-dim: rgba(47,224,122,.22);
+    --live-tx: #2fe07a;
+    --on-live: #06210f;
+    --live-bd: #4a544d;
+    --red:     #ff6b4a;   /* 5,4:1, al brillo del acento */
+    --rule:    #313732;
+    --rule-2:  #414944;
+    --frame:   #000000;
+    --edge:    rgba(255,255,255,.125);
+    --band:    var(--rule-2);
+    --band-w:  1px;
+    --bar-op:  .85;
+    --pri-bg:  #2f3733;   /* primaria: tecla, no losa clara */
+    --pri-bd:  #4a534d;
+    --pri-tx:  var(--ink);
+    --pri-edge: rgba(255,255,255,.14);
   }
 
   * { box-sizing: border-box; }
@@ -86,10 +129,22 @@
   @media (max-width: 980px) { .split { grid-template-columns: minmax(0, 1fr); } }
 
   .stage { display: flex; flex-direction: column; gap: 14px; }
+  .stage-hd { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
   .stage-cap {
     font: 500 11px/1.4 ui-monospace, "JetBrains Mono", "DejaVu Sans Mono", monospace;
     letter-spacing: .12em; text-transform: uppercase; color: var(--pg-mut);
   }
+
+  /* Selector de tema del mockup — chrome de la página, no del widget */
+  .themesel { margin-left: auto; display: flex; border: 1px solid var(--pg-rule); }
+  .themesel button {
+    font: 500 10px/1 ui-monospace, "JetBrains Mono", "DejaVu Sans Mono", monospace;
+    letter-spacing: .1em; text-transform: uppercase;
+    padding: 6px 10px; border: 0; background: transparent; color: var(--pg-mut); cursor: pointer;
+  }
+  .themesel button + button { border-left: 1px solid var(--pg-rule); }
+  .themesel button:hover { color: var(--pg-fg); }
+  .themesel button[aria-pressed="true"] { background: var(--pg-fg); color: var(--pg-bg); }
 
   /* ═══ WIDGET ════════════════════════════════════════════════════════════ */
   .w {
@@ -98,7 +153,7 @@
     color: var(--ink);
     font-family: ui-monospace, "JetBrains Mono", "DejaVu Sans Mono", "Liberation Mono", monospace;
     font-size: 11px;
-    border: 1px solid rgba(0,0,0,.45);
+    border: 1px solid var(--frame);
     box-shadow: 0 18px 40px -24px rgba(0,0,0,.6);
     overflow: hidden;
   }
@@ -108,12 +163,13 @@
     display: flex; align-items: center; gap: 14px;
     padding: 12px 12px 12px 12px;
     background: var(--card);
-    border-bottom: 2px solid var(--ink);
+    border-bottom: var(--band-w) solid var(--band);
+    box-shadow: inset 0 1px 0 var(--edge);
   }
   .brand { display: flex; align-items: center; gap: 11px; flex: 1; min-width: 0; }
 
   /* Código de barras: o se ve, o no está. Pasa de opacity .32 a tinta plena. */
-  .barcode { display: flex; align-items: flex-end; height: 32px; gap: 0; }
+  .barcode { display: flex; align-items: flex-end; height: 32px; gap: 0; opacity: var(--bar-op); }
   .barcode i { display: block; height: 100%; background: var(--ink); }
   .barcode i.s { opacity: 0; }
 
@@ -152,8 +208,12 @@
     cursor: pointer;
   }
   .tb:hover { border-color: var(--rule-2); color: var(--ink); }
-  .tb[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: #fff; font-weight: 700; }
-  .tb.add { margin-left: auto; background: var(--ink); border-color: var(--ink); color: #fff; font-weight: 700; }
+  .tb[aria-pressed="true"],
+  .tb.add {
+    background: var(--pri-bg); border-color: var(--pri-bd); color: var(--pri-tx);
+    font-weight: 700; box-shadow: inset 0 1px 0 var(--pri-edge);
+  }
+  .tb.add { margin-left: auto; }
   .tb:focus-visible { outline: 2px solid var(--live); outline-offset: 1px; }
 
   /* ── Lista ────────────────────────────────────────────────────────────── */
@@ -164,15 +224,16 @@
     background: var(--card);
     border: 1px solid var(--rule);
     padding: 9px 10px 9px 12px;
+    box-shadow: inset 0 1px 0 var(--edge);
   }
-  .card.live { border-color: var(--ink); }
+  .card.live { border-color: var(--live-bd); }
   .card.live::before,
   .card.boot::before {
     content: ""; position: absolute; inset: -1px auto -1px -1px; width: 4px; background: var(--live);
   }
   .card.boot { border-color: var(--rule-2); }
   .card.boot::before {
-    background: repeating-linear-gradient(-45deg, var(--live) 0 4px, rgba(31,156,62,.25) 4px 8px);
+    background: repeating-linear-gradient(-45deg, var(--live) 0 4px, var(--live-dim) 4px 8px);
     animation: crawl 900ms linear infinite;
   }
   @keyframes crawl { to { background-position: 0 -11.4px; } }
@@ -196,7 +257,7 @@
     padding: 5px 8px; border: 1px solid var(--rule-2); color: var(--ink-3);
   }
   .chip.on { background: var(--live); border-color: var(--live); color: var(--on-live); font-weight: 700; }
-  .chip.boot { border-color: var(--ink); color: var(--ink); font-weight: 700; }
+  .chip.boot { border-color: var(--live-bd); color: var(--ink); font-weight: 700; }
 
   /* La ruta ya no necesita la palabra PATH: se reconoce por la forma. */
   .c-path {
@@ -231,7 +292,10 @@
     background: transparent; border: 1px solid var(--rule); color: var(--ink-2); cursor: pointer;
   }
   .btn:hover { border-color: var(--rule-2); color: var(--ink); }
-  .btn.pri { background: var(--ink); border-color: var(--ink); color: #fff; font-weight: 700; }
+  .btn.pri {
+    background: var(--pri-bg); border-color: var(--pri-bd); color: var(--pri-tx);
+    font-weight: 700; box-shadow: inset 0 1px 0 var(--pri-edge);
+  }
   .btn.dgr { border-color: var(--red); color: var(--red); font-weight: 700; }
   .btn:focus-visible { outline: 2px solid var(--live); outline-offset: 1px; }
 
@@ -265,7 +329,8 @@
   .w-ft {
     display: flex; align-items: center; gap: 12px;
     padding: 9px 12px; background: var(--shell);
-    border-top: 2px solid var(--ink);
+    border-top: var(--band-w) solid var(--band);
+    box-shadow: inset 0 1px 0 var(--edge);
     font-size: 9px; letter-spacing: .16em; color: var(--ink-3);
   }
   .w-ft .barcode { height: 18px; }
@@ -307,9 +372,16 @@
 
   <div class="split">
     <div class="stage">
-      <p class="stage-cap">Representación completa · 512 px</p>
+      <div class="stage-hd">
+        <p class="stage-cap">Representación completa · 512 px</p>
+        <div class="themesel" role="group" aria-label="Tema del widget">
+          <button data-mode="auto"  aria-pressed="true">Auto</button>
+          <button data-mode="light" aria-pressed="false">Claro</button>
+          <button data-mode="dark"  aria-pressed="false">Oscuro</button>
+        </div>
+      </div>
 
-      <div class="w">
+      <div class="w" id="widget">
         <!-- ── HEADER ────────────────────────────────────────────────── -->
         <div class="w-hd">
           <div class="brand">
@@ -546,7 +618,7 @@
         <h3><em>05</em> El código de barras: a tinta plena</h3>
         <p>
           Al 32 % de opacidad no era textura, era suciedad, y su matrícula a 7 px no la lee nadie.
-          Ahora va en negro sólido —es un grafismo, que se vea— y el número se muda al pie, a 9 px,
+          Ahora va a tinta plena —es un grafismo, que se vea— y el número se muda al pie, a 9 px,
           donde ya vivía su gemelo. En el pie queda <strong>un</strong> código, no dos: dos adornos
           idénticos flanqueando el texto es ruido simétrico.
         </p>
@@ -562,6 +634,67 @@
           se queda en dos líneas y un botón.
         </p>
       </div>
+
+      <div class="note">
+        <h3><em>07</em> Paleta oscura: el chasis de devcommands</h3>
+        <p>
+          Invertir la tinta —papel negro, tinta blanca— no funciona: deja cabecera, pie y tarjeta viva
+          recortados en <code>#e9e9e3</code>, y el widget se lee como una reja. Se toma el material de
+          <code>kde-devcommands</code>: planos casi negros con tinte verde y apenas un 3 % de salto
+          entre ellos (<code>#131715</code> → <code>#181c1a</code> → <code>#222724</code>), con la
+          profundidad puesta en <strong>1 px de luz al 12,5 % en el canto superior</strong>. Los
+          filetes de cabecera y pie bajan de 2 px de tinta a 1 px de línea.
+        </p>
+        <p>
+          El acento <code>#2fe07a</code> da 8,7:1 sobre la tarjeta, así que el mismo verde vale de
+          relleno y de texto —un token menos—; el rojo se sube al brillo del acento
+          (<code>#ff6b4a</code>, 5,4:1) porque el <code>#9c2b15</code> del claro cae a 2:1 aquí; y la
+          primaria deja de ser una losa clara para dibujarse como <strong>tecla</strong>
+          (<code>#2f3733</code> con filete y su luz): sigue siendo el único botón con cuerpo sin ser
+          lo más brillante de la pantalla. Los cantos vivos no se heredan: el material se comparte,
+          la forma no. El selector vive en <em>Ajustes → Apariencia</em>, con <strong>Auto</strong>
+          por defecto. El desglose completo está en <code>mockup-dark.html</code>.
+        </p>
+      </div>
     </aside>
   </div>
 </div>
+
+<script>
+  (function () {
+    var widget = document.getElementById("widget");
+    var sel    = document.querySelector(".themesel");
+    var mq     = window.matchMedia("(prefers-color-scheme: dark)");
+    var mode   = "auto";
+
+    // "Auto" resuelve como el plasmoide: mira el tema del entorno. En la página,
+    // el data-theme del visor manda sobre la preferencia del sistema.
+    function resolved() {
+      if (mode !== "auto") return mode;
+      var forced = document.documentElement.dataset.theme;
+      if (forced === "dark" || forced === "light") return forced;
+      return mq.matches ? "dark" : "light";
+    }
+
+    function apply() {
+      widget.classList.toggle("dark", resolved() === "dark");
+      sel.querySelectorAll("button").forEach(function (b) {
+        b.setAttribute("aria-pressed", String(b.dataset.mode === mode));
+      });
+    }
+
+    sel.addEventListener("click", function (e) {
+      var b = e.target.closest("button");
+      if (!b) return;
+      mode = b.dataset.mode;
+      apply();
+    });
+
+    mq.addEventListener("change", apply);
+    new MutationObserver(apply).observe(document.documentElement, {
+      attributes: true, attributeFilter: ["data-theme"]
+    });
+
+    apply();
+  })();
+</script>

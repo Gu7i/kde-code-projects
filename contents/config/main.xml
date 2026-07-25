@@ -14,5 +14,9 @@
     <entry name="editorsList" type="StringList">
       <default>VS Code|code --new-window|code,Kate|kate|kate,Vim|konsole -e vim|utilities-terminal</default>
     </entry>
+    <!-- auto = sigue el esquema de color de Plasma; light / dark = fijo -->
+    <entry name="theme" type="String">
+      <default>auto</default>
+    </entry>
   </group>
 </kcfg>

@@ -15,29 +15,73 @@ PlasmoidItem {
     preferredRepresentation: compactRepresentation
 
     // ── Theme ──────────────────────────────────────────────────────────────
-    // Grises con un sesgo mínimo hacia el verde de señal: un gris puro se lee
-    // como "no elegido".
-    readonly property color clrBg:     "#b6b6b2"
-    readonly property color clrCard:   "#d6d6d1"
-    readonly property color clrShell:  "#c5c5c0"  // barras de herramientas y pie
-    readonly property color clrPanel:  "#cacac5"  // panel de servicios
-    readonly property color clrBorder: "#131410"
-    readonly property color clrText:   "#131410"
-    readonly property color clrSub:    "#3c3d35"  // valores secundarios (ruta, estado)
-    readonly property color clrMuted:  "#5c5d53"  // etiquetas — 4.6:1 sobre clrCard
+    // Dos paletas, un sistema. En claro: papel gris, tinta negra. En oscuro no
+    // se invierte la tinta —eso deja cada borde estructural en blanco y el
+    // widget se lee como una reja— sino que se toma el chasis de
+    // kde-devcommands: planos casi negros con tinte verde, muy poco salto entre
+    // ellos, y la profundidad puesta en clrEdge (1 px de luz arriba).
+    // "auto" mira el esquema de Plasma; light/dark lo fijan (Plasmoid.configuration.theme).
+    readonly property bool dark: {
+        var mode = Plasmoid.configuration.theme
+        if (mode === "dark")  return true
+        if (mode === "light") return false
+        return Kirigami.Theme.backgroundColor.hslLightness < 0.5
+    }
+
+    // Superficies — mismo orden en los dos temas: fondo < barras < panel < tarjeta.
+    readonly property color clrBg:     dark ? "#131715" : "#b6b6b2"  // bandeja donde caen las tarjetas
+    readonly property color clrCard:   dark ? "#222724" : "#d6d6d1"  // plano elevado: tarjeta y cabecera
+    readonly property color clrShell:  dark ? "#181c1a" : "#c5c5c0"  // barras de herramientas y pie
+    readonly property color clrPanel:  dark ? "#1b201e" : "#cacac5"  // panel de servicios
+    readonly property color clrText:   dark ? "#e3e8e4" : "#131410"  // 12.3:1 sobre clrCard
+    readonly property color clrSub:    dark ? "#b0b9b4" : "#3c3d35"  // valores secundarios (ruta, estado)
+    readonly property color clrMuted:  dark ? "#8b948e" : "#5c5d53"  // etiquetas — ≥4.5:1 sobre clrCard
+
+    // La luz que da grosor a los planos elevados: cabecera, tarjeta y pie.
+    // En claro no hace falta — ahí el salto de valor ya es suficiente.
+    readonly property color clrEdge: dark ? "#20ffffff" : "transparent"
+
+    // Filete de cabecera y pie. En claro, 2 px de tinta: el negro sobre gris es
+    // el contraste máximo disponible. En oscuro esa banda sería lo más brillante
+    // del widget y se llevaría la mirada por delante del nombre del proyecto.
+    readonly property color clrBand: dark ? "#414944" : "#131410"
+    readonly property int   bandW:   dark ? 1 : 2
 
     // Regla 1: el verde significa una sola cosa — "esto está vivo".
     // Regla 2: verde de señal, no verde puro; deja de vibrar sobre el gris.
-    readonly property color clrGreen:   "#1f9c3e"  // relleno: raíl, badge, punto de servicio
-    readonly property color clrGreenTx: "#0b5220"  // el mismo verde, legible sobre gris claro
-    readonly property color clrOnGreen: "#05300f"  // texto sobre relleno verde
+    // En oscuro basta un verde: 8.7:1 sobre clrCard, sirve de relleno y de texto.
+    readonly property color clrGreen:   dark ? "#2fe07a" : "#1f9c3e"  // relleno: raíl, badge, punto de servicio
+    readonly property color clrGreenTx: dark ? "#2fe07a" : "#0b5220"  // el mismo verde, legible sobre el fondo
+    readonly property color clrOnGreen: dark ? "#06210f" : "#05300f"  // texto sobre relleno verde
 
-    // Regla 3: tres rangos de botón. Tinta = primaria, filete = secundaria, rojo = destructiva.
-    readonly property color clrInk:  "#131410"    // acción primaria y toggle activo
-    readonly property color clrRed:  "#9c2b15"
-    readonly property color clrBtn:  "transparent" // los secundarios se definen por el filete
-    readonly property color clrHair:  "#33131410"  // filete de 1 px (tinta al 20%)
-    readonly property color clrHair2: "#73131410"  // divisoria estructural (tinta al 45%)
+    // Regla 3: tres rangos de botón. Primaria con cuerpo, filete = secundaria,
+    // rojo = destructiva. En oscuro la primaria no es una losa clara sino una
+    // tecla: es el único botón con relleno, y sigue siendo el primero que se ve.
+    readonly property color clrPriBg:   dark ? "#2f3733" : "#131410"
+    readonly property color clrPriBd:   dark ? "#4a534d" : "#131410"
+    readonly property color clrPriTx:   dark ? "#e3e8e4" : "#ffffff"
+    readonly property color clrPriEdge: dark ? "#24ffffff" : "transparent"
+
+    readonly property color clrRed:   dark ? "#ff6b4a" : "#9c2b15"  // 5.4:1, al brillo del acento
+    readonly property color clrOnRed: dark ? "#131715" : "#ffffff"
+    readonly property color clrBtn:   "transparent"  // los secundarios se definen por el filete
+
+    readonly property color clrHair:   dark ? "#313732" : "#33131410"  // filete de 1 px
+    readonly property color clrHair2:  dark ? "#414944" : "#73131410"  // divisoria estructural
+    readonly property color clrLiveBd: dark ? "#4a544d" : "#131410"    // borde de la tarjeta viva
+    readonly property color clrField:  dark ? "#0f1211" : "#bfbfba"    // campo de búsqueda: hundido
+
+    // Grafismos y marcas transitorias: código de barras, destino de drop.
+    readonly property color clrInk:      dark ? "#e3e8e4" : "#131410"
+    readonly property real  barOpacity:  dark ? 0.85 : 1.0
+
+    // Los desplegables no invierten con el tema: son una capa flotante que debe
+    // despegarse de la tarjeta, y su borde (clrBorder) ya la recorta.
+    readonly property color clrBorder:  dark ? "#414944" : "#131410"
+    readonly property color clrMenuBg:  dark ? "#0f1211" : "#111111"
+    readonly property color clrMenuHov: dark ? "#1b201e" : "#1e1e1e"
+    readonly property color clrMenuTx:  dark ? "#e3e8e4" : "#ffffff"
+    readonly property color clrMenuDim: dark ? "#8b948e" : "#999999"
 
     // Courier New tiene el trazo tan fino que a 9-10 px se deshace sobre gris.
     // Se elige la primera mono de verdad que haya instalada.
@@ -249,10 +293,16 @@ PlasmoidItem {
                 height: 64
                 color: root.clrCard
 
+                // La luz de 1 px: es lo que da grosor al plano en oscuro.
+                Rectangle {
+                    anchors.top: parent.top
+                    width: parent.width; height: 1
+                    color: root.clrEdge
+                }
                 Rectangle {
                     anchors.bottom: parent.bottom
-                    width: parent.width; height: 2
-                    color: root.clrBorder
+                    width: parent.width; height: root.bandW
+                    color: root.clrBand
                 }
 
                 RowLayout {
@@ -272,6 +322,7 @@ PlasmoidItem {
                             Rectangle {
                                 width: parent.bars[index]; height: 30
                                 color: index % 2 === 0 ? root.clrInk : "transparent"
+                                opacity: root.barOpacity
                             }
                         }
                     }
@@ -357,16 +408,22 @@ PlasmoidItem {
                             Layout.preferredWidth: 72; Layout.preferredHeight: 26
                             property bool active:      fullRep[modelData.prop]
                             property bool destructive: modelData.label === "✕ DEL"
-                            // Activo = tinta (o rojo si es destructivo); inactivo = solo filete.
-                            color:        active ? (destructive ? root.clrRed : root.clrInk) : root.clrBtn
-                            border.color: active ? (destructive ? root.clrRed : root.clrInk) : root.clrHair
+                            // Activo = relleno (o rojo si es destructivo); inactivo = solo filete.
+                            color:        active ? (destructive ? root.clrRed : root.clrPriBg) : root.clrBtn
+                            border.color: active ? (destructive ? root.clrRed : root.clrPriBd) : root.clrHair
                             border.width: 1
+                            Rectangle {
+                                x: 1; y: 1
+                                width: parent.width - 2; height: 1
+                                visible: parent.active && !parent.destructive
+                                color: root.clrPriEdge
+                            }
                             Text {
                                 anchors.centerIn: parent
                                 text:  modelData.label
                                 font.family: root.mono; font.pixelSize: 11
                                 font.bold: active; font.letterSpacing: 0.6
-                                color: active ? "#ffffff" : root.clrText
+                                color: active ? (destructive ? root.clrOnRed : root.clrPriTx) : root.clrText
                             }
                             HoverHandler { id: toolbarHov }
                             MouseArea {
@@ -386,13 +443,17 @@ PlasmoidItem {
 
                     Item { Layout.fillWidth: true }
 
-                    // Acción primaria de la barra → tinta, no verde (Reglas 1 y 3)
+                    // Acción primaria de la barra → relleno, no verde (Reglas 1 y 3)
                     Rectangle {
                         Layout.preferredWidth: 72; Layout.preferredHeight: 26
-                        color: root.clrInk; border.color: root.clrInk; border.width: 1
+                        color: root.clrPriBg; border.color: root.clrPriBd; border.width: 1
+                        Rectangle {
+                            x: 1; y: 1; width: parent.width - 2; height: 1
+                            color: root.clrPriEdge
+                        }
                         Text {
                             anchors.centerIn: parent
-                            text: "+ ADD"; font.family: root.mono; font.pixelSize: 11; font.bold: true; color: "#ffffff"
+                            text: "+ ADD"; font.family: root.mono; font.pixelSize: 11; font.bold: true; color: root.clrPriTx
                         }
                         HoverHandler { id: addHov }
                         MouseArea { anchors.fill: parent; onClicked: folderDialog.open() }
@@ -406,7 +467,7 @@ PlasmoidItem {
                 Layout.fillWidth: true
                 height: fullRep.searchVisible ? 30 : 0
                 visible: fullRep.searchVisible
-                color: "#bfbfba"
+                color: root.clrField
                 border.color: root.clrHair2; border.width: 1
                 clip: true
 
@@ -668,10 +729,17 @@ PlasmoidItem {
                                 width: parent.width
                                 height: cardCol.implicitHeight
                                 color: root.clrCard
-                                border.color: projectItem.live ? root.clrBorder : root.clrHair
+                                border.color: projectItem.live ? root.clrLiveBd : root.clrHair
                                 border.width: 1
                                 opacity: fullRep.draggedIndex === origIndex ? 0.3 : 1.0
                                 Behavior on opacity { NumberAnimation { duration: 100 } }
+
+                                // La luz de 1 px que separa la tarjeta del fondo
+                                // sin recortarla con un contorno claro.
+                                Rectangle {
+                                    x: 1; y: 1; width: parent.width - 2; height: 1
+                                    color: root.clrEdge
+                                }
 
                                 // Filete verde: el estado se escanea sin leer, y sin
                                 // gastar una barra negra ni una fila entera en decirlo.
@@ -769,8 +837,8 @@ PlasmoidItem {
                                                 Layout.preferredWidth: badgeTxt.implicitWidth + 16
                                                 Layout.preferredHeight: 19
                                                 color:        projectItem.isRunning ? root.clrGreen : "transparent"
-                                                border.color: projectItem.isRunning ? root.clrGreen :
-                                                              projectItem.live      ? root.clrInk   : root.clrHair2
+                                                border.color: projectItem.isRunning ? root.clrGreen   :
+                                                              projectItem.live      ? root.clrLiveBd : root.clrHair2
                                                 border.width: 1
                                                 Text {
                                                     id: badgeTxt
@@ -864,22 +932,22 @@ PlasmoidItem {
                                                             id: editorPopup
                                                             y: parent.height + 2
                                                             width: 170; padding: 0
-                                                            background: Rectangle { color: "#111111"; border.color: root.clrBorder; border.width: 1 }
+                                                            background: Rectangle { color: root.clrMenuBg; border.color: root.clrBorder; border.width: 1 }
                                                             contentItem: Column {
                                                                 width: 170
                                                                 Repeater {
                                                                     model: root.editorOptions
                                                                     delegate: Rectangle {
                                                                         width: 170; height: 28
-                                                                        color: eItemHov.containsMouse ? "#1e1e1e" : "#111111"
+                                                                        color: eItemHov.containsMouse ? root.clrMenuHov : root.clrMenuBg
                                                                         // "Seleccionado" no es "vivo": sobre negro, la tinta es el blanco
-                                                                        Rectangle { width: 3; height: parent.height; color: "#ffffff"; visible: projectItem.currentEditor === modelData.cmd }
+                                                                        Rectangle { width: 3; height: parent.height; color: root.clrMenuTx; visible: projectItem.currentEditor === modelData.cmd }
                                                                         Text {
                                                                             anchors.verticalCenter: parent.verticalCenter; x: 12
                                                                             text: modelData.name.toUpperCase()
                                                                             font.family: root.mono; font.pixelSize: 11
                                                                             font.bold: projectItem.currentEditor === modelData.cmd
-                                                                            color: projectItem.currentEditor === modelData.cmd ? "#ffffff" : "#999999"
+                                                                            color: projectItem.currentEditor === modelData.cmd ? root.clrMenuTx : root.clrMenuDim
                                                                         }
                                                                         HoverHandler { id: eItemHov }
                                                                         MouseArea { anchors.fill: parent; onClicked: { projectItem.setEditor(modelData.cmd); editorPopup.close() } }
@@ -925,21 +993,21 @@ PlasmoidItem {
                                                             id: composePopup
                                                             y: parent.height + 2
                                                             width: 220; padding: 0
-                                                            background: Rectangle { color: "#111111"; border.color: root.clrBorder; border.width: 1 }
+                                                            background: Rectangle { color: root.clrMenuBg; border.color: root.clrBorder; border.width: 1 }
                                                             contentItem: Column {
                                                                 width: 220
                                                                 Repeater {
                                                                     model: projectItem.composeFileNames
                                                                     delegate: Rectangle {
                                                                         width: 220; height: 28
-                                                                        color: cItemHov.containsMouse ? "#1e1e1e" : "#111111"
-                                                                        Rectangle { width: 3; height: parent.height; color: "#ffffff"; visible: index === projectItem.selectedComposeIndex }
+                                                                        color: cItemHov.containsMouse ? root.clrMenuHov : root.clrMenuBg
+                                                                        Rectangle { width: 3; height: parent.height; color: root.clrMenuTx; visible: index === projectItem.selectedComposeIndex }
                                                                         Text {
                                                                             anchors.verticalCenter: parent.verticalCenter; x: 12
                                                                             text: modelData
                                                                             font.family: root.mono; font.pixelSize: 11
                                                                             font.bold: index === projectItem.selectedComposeIndex
-                                                                            color: index === projectItem.selectedComposeIndex ? "#ffffff" : "#999999"
+                                                                            color: index === projectItem.selectedComposeIndex ? root.clrMenuTx : root.clrMenuDim
                                                                         }
                                                                         HoverHandler { id: cItemHov }
                                                                         MouseArea {
@@ -1046,13 +1114,17 @@ PlasmoidItem {
                                                     PlasmaComponents.ToolTip { text: "Actualizar imágenes"; visible: pullHov.hovered }
                                                 }
 
-                                                // LAUNCH — primaria: tinta. Verde es el estado
-                                                // que produce, no el botón que lo lanza (Reglas 1 y 3)
+                                                // LAUNCH — primaria: la única con cuerpo. Verde es el
+                                                // estado que produce, no el botón que lo lanza (Reglas 1 y 3)
                                                 Rectangle {
                                                     visible: dockerFiles.count > 0 && !projectItem.isLoading && !projectItem.isRunning && !projectItem.isStarting
                                                     Layout.preferredWidth: 84; Layout.preferredHeight: 22
-                                                    color: root.clrInk; border.color: root.clrInk; border.width: 1
-                                                    Text { anchors.centerIn: parent; text: "▶ LAUNCH"; font.family: root.mono; font.pixelSize: 10; font.bold: true; color: "#ffffff" }
+                                                    color: root.clrPriBg; border.color: root.clrPriBd; border.width: 1
+                                                    Rectangle {
+                                                        x: 1; y: 1; width: parent.width - 2; height: 1
+                                                        color: root.clrPriEdge
+                                                    }
+                                                    Text { anchors.centerIn: parent; text: "▶ LAUNCH"; font.family: root.mono; font.pixelSize: 10; font.bold: true; color: root.clrPriTx }
                                                     HoverHandler { id: launchHov }
                                                     MouseArea {
                                                         anchors.fill: parent
@@ -1277,7 +1349,8 @@ PlasmoidItem {
                 Layout.fillWidth: true
                 height: 34; color: root.clrShell
 
-                Rectangle { anchors.top: parent.top; width: parent.width; height: 2; color: root.clrBorder }
+                Rectangle { anchors.top: parent.top; width: parent.width; height: root.bandW; color: root.clrBand }
+                Rectangle { y: root.bandW; width: parent.width; height: 1; color: root.clrEdge }
 
                 RowLayout {
                     anchors.fill: parent; anchors.leftMargin: 12; anchors.rightMargin: 12; spacing: 10
@@ -1290,7 +1363,11 @@ PlasmoidItem {
                         property var bars: [1,3,1,2,4,1,2,1,3,2,1,4,1,2]
                         Repeater {
                             model: parent.bars.length
-                            Rectangle { width: parent.bars[index]; height: 18; color: index % 2 === 0 ? root.clrInk : "transparent" }
+                            Rectangle {
+                                width: parent.bars[index]; height: 18
+                                color: index % 2 === 0 ? root.clrInk : "transparent"
+                                opacity: root.barOpacity
+                            }
                         }
                     }
 
