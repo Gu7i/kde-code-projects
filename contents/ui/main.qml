@@ -255,6 +255,21 @@ PlasmoidItem {
             if (!dragEnabled) { draggedIndex = -1; dropTargetIndex = -1 }
         }
 
+        // Los desplegables flotan en el overlay de la ventana: la tarjeta no los
+        // recorta, pero el borde del diálogo sí. Antes de abrir uno se mide el
+        // hueco real bajo el botón; si la lista entera no cabe, se abre hacia
+        // arriba, y si tampoco cabe arriba se queda del lado más holgado con la
+        // lista desplazándose dentro del menú. Nunca queda un item medio cortado.
+        function placeMenu(popup, anchor, count, itemH) {
+            var need  = count * itemH + 2          // +2: el filete del fondo
+            var top   = anchor.mapToItem(fullRep, 0, 0).y
+            var below = fullRep.height - (top + anchor.height) - 8
+            var above = top - 8
+            var room  = (need <= below || below >= above) ? below : above
+            popup.height = Math.max(Math.min(need, room), itemH + 2)
+            popup.y = (room === below) ? anchor.height + 2 : -popup.height - 2
+        }
+
         property var filteredProjects: {
             var q = searchText.toLowerCase()
             var projects = Plasmoid.configuration.projects
@@ -932,26 +947,30 @@ PlasmoidItem {
                                                             id: editorPopup
                                                             y: parent.height + 2
                                                             width: 170; padding: 0
+                                                            onAboutToShow: fullRep.placeMenu(editorPopup, editorBtn, root.editorOptions.length, 28)
                                                             background: Rectangle { color: root.clrMenuBg; border.color: root.clrBorder; border.width: 1 }
-                                                            contentItem: Column {
-                                                                width: 170
-                                                                Repeater {
-                                                                    model: root.editorOptions
-                                                                    delegate: Rectangle {
-                                                                        width: 170; height: 28
-                                                                        color: eItemHov.containsMouse ? root.clrMenuHov : root.clrMenuBg
-                                                                        // "Seleccionado" no es "vivo": sobre negro, la tinta es el blanco
-                                                                        Rectangle { width: 3; height: parent.height; color: root.clrMenuTx; visible: projectItem.currentEditor === modelData.cmd }
-                                                                        Text {
-                                                                            anchors.verticalCenter: parent.verticalCenter; x: 12
-                                                                            text: modelData.name.toUpperCase()
-                                                                            font.family: root.mono; font.pixelSize: 11
-                                                                            font.bold: projectItem.currentEditor === modelData.cmd
-                                                                            color: projectItem.currentEditor === modelData.cmd ? root.clrMenuTx : root.clrMenuDim
-                                                                        }
-                                                                        HoverHandler { id: eItemHov }
-                                                                        MouseArea { anchors.fill: parent; onClicked: { projectItem.setEditor(modelData.cmd); editorPopup.close() } }
+                                                            contentItem: ListView {
+                                                                implicitWidth: 170
+                                                                implicitHeight: contentHeight
+                                                                clip: true
+                                                                boundsBehavior: Flickable.StopAtBounds
+                                                                model: root.editorOptions
+                                                                delegate: Rectangle {
+                                                                    width: 170; height: 28
+                                                                    color: eItemHov.containsMouse ? root.clrMenuHov : root.clrMenuBg
+                                                                    // "Seleccionado" no es "vivo": sobre negro, la tinta es el blanco
+                                                                    Rectangle { width: 3; height: parent.height; color: root.clrMenuTx; visible: projectItem.currentEditor === modelData.cmd }
+                                                                    Text {
+                                                                        anchors.verticalCenter: parent.verticalCenter
+                                                                        x: 12; width: parent.width - 20
+                                                                        text: modelData.name.toUpperCase()
+                                                                        elide: Text.ElideRight
+                                                                        font.family: root.mono; font.pixelSize: 11
+                                                                        font.bold: projectItem.currentEditor === modelData.cmd
+                                                                        color: projectItem.currentEditor === modelData.cmd ? root.clrMenuTx : root.clrMenuDim
                                                                     }
+                                                                    HoverHandler { id: eItemHov }
+                                                                    MouseArea { anchors.fill: parent; onClicked: { projectItem.setEditor(modelData.cmd); editorPopup.close() } }
                                                                 }
                                                             }
                                                         }
@@ -993,34 +1012,38 @@ PlasmoidItem {
                                                             id: composePopup
                                                             y: parent.height + 2
                                                             width: 220; padding: 0
+                                                            onAboutToShow: fullRep.placeMenu(composePopup, fileBtn, projectItem.composeFileNames.length, 28)
                                                             background: Rectangle { color: root.clrMenuBg; border.color: root.clrBorder; border.width: 1 }
-                                                            contentItem: Column {
-                                                                width: 220
-                                                                Repeater {
-                                                                    model: projectItem.composeFileNames
-                                                                    delegate: Rectangle {
-                                                                        width: 220; height: 28
-                                                                        color: cItemHov.containsMouse ? root.clrMenuHov : root.clrMenuBg
-                                                                        Rectangle { width: 3; height: parent.height; color: root.clrMenuTx; visible: index === projectItem.selectedComposeIndex }
-                                                                        Text {
-                                                                            anchors.verticalCenter: parent.verticalCenter; x: 12
-                                                                            text: modelData
-                                                                            font.family: root.mono; font.pixelSize: 11
-                                                                            font.bold: index === projectItem.selectedComposeIndex
-                                                                            color: index === projectItem.selectedComposeIndex ? root.clrMenuTx : root.clrMenuDim
-                                                                        }
-                                                                        HoverHandler { id: cItemHov }
-                                                                        MouseArea {
-                                                                            anchors.fill: parent
-                                                                            onClicked: {
-                                                                                if (projectItem.selectedComposeIndex !== index) {
-                                                                                    projectItem.selectedComposeIndex = index
-                                                                                    projectItem.isExpanded = false
-                                                                                    projectItem.isRunning  = false
-                                                                                    projectItem.checkStatus()
-                                                                                }
-                                                                                composePopup.close()
+                                                            contentItem: ListView {
+                                                                implicitWidth: 220
+                                                                implicitHeight: contentHeight
+                                                                clip: true
+                                                                boundsBehavior: Flickable.StopAtBounds
+                                                                model: projectItem.composeFileNames
+                                                                delegate: Rectangle {
+                                                                    width: 220; height: 28
+                                                                    color: cItemHov.containsMouse ? root.clrMenuHov : root.clrMenuBg
+                                                                    Rectangle { width: 3; height: parent.height; color: root.clrMenuTx; visible: index === projectItem.selectedComposeIndex }
+                                                                    Text {
+                                                                        anchors.verticalCenter: parent.verticalCenter
+                                                                        x: 12; width: parent.width - 20
+                                                                        text: modelData
+                                                                        elide: Text.ElideMiddle
+                                                                        font.family: root.mono; font.pixelSize: 11
+                                                                        font.bold: index === projectItem.selectedComposeIndex
+                                                                        color: index === projectItem.selectedComposeIndex ? root.clrMenuTx : root.clrMenuDim
+                                                                    }
+                                                                    HoverHandler { id: cItemHov }
+                                                                    MouseArea {
+                                                                        anchors.fill: parent
+                                                                        onClicked: {
+                                                                            if (projectItem.selectedComposeIndex !== index) {
+                                                                                projectItem.selectedComposeIndex = index
+                                                                                projectItem.isExpanded = false
+                                                                                projectItem.isRunning  = false
+                                                                                projectItem.checkStatus()
                                                                             }
+                                                                            composePopup.close()
                                                                         }
                                                                     }
                                                                 }
