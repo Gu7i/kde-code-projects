@@ -1,0 +1,637 @@
+<meta charset="utf-8">
+<title>DEV PROJECTS — dark v2 (chasis devcommands)</title>
+
+<style>
+  /* ── Página ─────────────────────────────────────────────────────────────── */
+  :root {
+    --pg-bg: #e8e8e4; --pg-fg: #1b1c17; --pg-mut: #5d5f54;
+    --pg-card: #f4f4f1; --pg-rule: rgba(27,28,23,.14); --pg-acc: #1f7a36;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --pg-bg: #131715; --pg-fg: #e3e8e4; --pg-mut: #949d98;
+      --pg-card: #181c1a; --pg-rule: rgba(227,232,228,.14); --pg-acc: #2fe07a;
+    }
+  }
+  :root[data-theme="dark"] {
+    --pg-bg: #131715; --pg-fg: #e3e8e4; --pg-mut: #949d98;
+    --pg-card: #181c1a; --pg-rule: rgba(227,232,228,.14); --pg-acc: #2fe07a;
+  }
+  :root[data-theme="light"] {
+    --pg-bg: #e8e8e4; --pg-fg: #1b1c17; --pg-mut: #5d5f54;
+    --pg-card: #f4f4f1; --pg-rule: rgba(27,28,23,.14); --pg-acc: #1f7a36;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0; background: var(--pg-bg); color: var(--pg-fg);
+    font-family: ui-sans-serif, "Inter", "Noto Sans", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .page { max-width: 1240px; margin: 0 auto; padding: 40px 24px 72px; }
+
+  .eyebrow {
+    margin: 0 0 10px;
+    font: 600 11px/1 ui-monospace, "JetBrains Mono", "DejaVu Sans Mono", monospace;
+    letter-spacing: .18em; text-transform: uppercase; color: var(--pg-mut);
+  }
+  h1 {
+    margin: 0 0 12px; font-size: clamp(26px, 3.4vw, 38px); font-weight: 700;
+    letter-spacing: -.02em; text-wrap: balance; line-height: 1.08;
+  }
+  .lede { margin: 0; max-width: 64ch; color: var(--pg-mut); font-size: 15px; line-height: 1.55; }
+
+  /* ── Comparativa ────────────────────────────────────────────────────────── */
+  .compare {
+    display: grid; gap: 28px; margin-top: 36px; align-items: start;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  @media (max-width: 1120px) { .compare { grid-template-columns: minmax(0, 1fr); } }
+
+  .stage { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+  .stage-cap {
+    margin: 0;
+    font: 500 11px/1.4 ui-monospace, "JetBrains Mono", "DejaVu Sans Mono", monospace;
+    letter-spacing: .12em; text-transform: uppercase; color: var(--pg-mut);
+  }
+  .stage-cap b { color: var(--pg-fg); font-weight: 600; }
+  .stage.pick .stage-cap b { color: var(--pg-acc); }
+
+  /* ═══ WIDGET ════════════════════════════════════════════════════════════ */
+  /* Un solo juego de reglas; lo que cambia entre propuestas son los tokens. */
+  .w {
+    width: 100%; max-width: 560px;
+    background: var(--ground); color: var(--ink);
+    font-family: ui-monospace, "JetBrains Mono", "DejaVu Sans Mono", "Liberation Mono", monospace;
+    font-size: 11px;
+    border: 1px solid var(--frame);
+    box-shadow: 0 18px 40px -24px rgba(0,0,0,.75);
+    overflow: hidden;
+  }
+
+  /* ── A · la que no gustó: se invierte la tinta ───────────────────────────
+        Papel oscuro, tinta clara. Cada borde estructural es una línea casi
+        blanca, así que el widget se lee como una reja. ────────────────────── */
+  .w.old {
+    --ground: #1a1b16;
+    --card:   #282920;
+    --shell:  #212219;
+    --panel:  #24251c;
+    --ink:    #e9e9e3;
+    --ink-2:  #b9bab0;
+    --ink-3:  #9a9c90;
+    --live:      #2fae4f;
+    --live-dim:  rgba(47,174,79,.25);
+    --live-tx:   #6fcb84;
+    --on-live:   #05300f;
+    --live-bd:   var(--ink);
+    --red:    #ef7355;
+    --rule:   rgba(233,233,227,.20);
+    --rule-2: rgba(233,233,227,.45);
+    --frame:  rgba(0,0,0,.7);
+    --edge:   transparent;          /* sin luz: la profundidad la fingen los bordes */
+    --band:   var(--ink);           /* filete de cabecera y pie */
+    --band-w: 2px;
+    --bar-op: 1;
+    --pri-bg: var(--ink);           /* primaria = losa clara */
+    --pri-bd: var(--ink);
+    --pri-tx: #131410;
+    --pri-edge: transparent;
+  }
+
+  /* ── B · propuesta: el chasis de devcommands ─────────────────────────────
+        Planos casi negros con tinte verde y muy poco salto entre ellos; la
+        profundidad la da 1 px de luz arriba, no una línea clara alrededor. ── */
+  .w.new {
+    --ground: #131715;              /* bandeja hundida (clrSunken) */
+    --card:   #222724;              /* plano elevado (clrRaised)  */
+    --shell:  #181c1a;              /* barras y pie  (clrSurface) */
+    --panel:  #1b201e;
+    --ink:    #e3e8e4;
+    --ink-2:  #b0b9b4;
+    --ink-3:  #8b948e;              /* 4,9:1 sobre --card */
+    --live:      #2fe07a;
+    --live-dim:  rgba(47,224,122,.22);
+    --live-tx:   #2fe07a;           /* 8,7:1 — el mismo verde sirve de texto */
+    --on-live:   #06210f;
+    --live-bd:   #4a544d;
+    --red:    #ff6b4a;              /* 5,4:1 */
+    --rule:   #313732;
+    --rule-2: #414944;
+    --frame:  #000000;
+    --edge:   rgba(255,255,255,.125);
+    --band:   var(--rule-2);
+    --band-w: 1px;
+    --bar-op: .85;
+    --pri-bg: #2f3733;              /* primaria = tecla, no losa */
+    --pri-bd: #4a534d;
+    --pri-tx: var(--ink);
+    --pri-edge: rgba(255,255,255,.14);
+  }
+
+  /* ── Cabecera ─────────────────────────────────────────────────────────── */
+  .w-hd {
+    display: flex; align-items: center; gap: 14px; padding: 12px;
+    background: var(--card);
+    border-bottom: var(--band-w) solid var(--band);
+    box-shadow: inset 0 1px 0 var(--edge);
+  }
+  .brand { display: flex; align-items: center; gap: 11px; flex: 1; min-width: 0; }
+
+  .barcode { display: flex; align-items: flex-end; height: 32px; gap: 0; opacity: var(--bar-op); }
+  .barcode i { display: block; height: 100%; background: var(--ink); }
+  .barcode i.s { opacity: 0; }
+
+  .w-title { margin: 0; font-size: 16px; font-weight: 700; letter-spacing: .16em; line-height: 1; }
+  .w-sub   { margin: 5px 0 0; font-size: 9px; letter-spacing: .2em; color: var(--ink-3); }
+
+  .readout {
+    padding-left: 16px; border-left: 1px solid var(--rule-2);
+    text-align: right; align-self: stretch;
+    display: flex; flex-direction: column; justify-content: center; gap: 4px;
+  }
+  .rd-num { font-variant-numeric: tabular-nums; line-height: 1; white-space: nowrap; }
+  .rd-num b { font-size: 26px; font-weight: 700; color: var(--live-tx); letter-spacing: .01em; }
+  .rd-num span { font-size: 15px; font-weight: 400; color: var(--ink-3); }
+  .rd-lb { font-size: 8px; letter-spacing: .18em; color: var(--ink-3); }
+
+  /* ── Toolbar ──────────────────────────────────────────────────────────── */
+  .w-tb {
+    display: flex; align-items: center; gap: 5px;
+    padding: 6px 8px; background: var(--shell);
+    border-bottom: 1px solid var(--rule-2);
+  }
+  .tb {
+    font-family: inherit; font-size: 10px; line-height: 1; letter-spacing: .08em;
+    height: 24px; padding: 0 11px;
+    color: var(--ink-2); background: transparent;
+    border: 1px solid var(--rule); border-radius: 0; cursor: pointer;
+  }
+  .tb:hover { border-color: var(--rule-2); color: var(--ink); }
+  .tb[aria-pressed="true"],
+  .tb.add {
+    background: var(--pri-bg); border-color: var(--pri-bd); color: var(--pri-tx);
+    font-weight: 700; box-shadow: inset 0 1px 0 var(--pri-edge);
+  }
+  .tb.add { margin-left: auto; }
+  .tb:focus-visible { outline: 2px solid var(--live); outline-offset: 1px; }
+
+  /* ── Lista ────────────────────────────────────────────────────────────── */
+  .w-list { display: flex; flex-direction: column; gap: 6px; padding: 8px; }
+
+  .card {
+    position: relative; background: var(--card);
+    border: 1px solid var(--rule); padding: 9px 10px 9px 12px;
+    box-shadow: inset 0 1px 0 var(--edge);
+  }
+  .card.live { border-color: var(--live-bd); }
+  .card.live::before,
+  .card.boot::before {
+    content: ""; position: absolute; inset: -1px auto -1px -1px; width: 4px; background: var(--live);
+  }
+  .card.boot { border-color: var(--rule-2); }
+  .card.boot::before {
+    background: repeating-linear-gradient(-45deg, var(--live) 0 4px, var(--live-dim) 4px 8px);
+    animation: crawl 900ms linear infinite;
+  }
+  @keyframes crawl { to { background-position: 0 -11.4px; } }
+  @media (prefers-reduced-motion: reduce) { .card.boot::before { animation: none; } }
+
+  .c-row  { display: flex; gap: 10px; align-items: flex-start; }
+  .c-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+  .c-top  { display: flex; align-items: center; gap: 8px; }
+
+  .c-name {
+    margin: 0; font-size: 13px; font-weight: 700; letter-spacing: .07em;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--ink);
+  }
+  .card:not(.live):not(.boot) .c-name { color: var(--ink-2); }
+
+  .chip {
+    margin-left: auto; flex: none;
+    font-size: 9px; letter-spacing: .16em; line-height: 1;
+    padding: 5px 8px; border: 1px solid var(--rule-2); color: var(--ink-3);
+  }
+  .chip.on   { background: var(--live); border-color: var(--live); color: var(--on-live); font-weight: 700; }
+  .chip.boot { border-color: var(--live-bd); color: var(--ink); font-weight: 700; }
+
+  .c-path {
+    margin: 0; font-size: 11px; color: var(--ink-2);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .c-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 10px; color: var(--ink-3); }
+  .tag {
+    font: inherit; letter-spacing: .02em; color: var(--ink-2);
+    padding: 3px 7px; border: 1px solid var(--rule); background: transparent; cursor: pointer;
+  }
+  .tag:hover { border-color: var(--rule-2); }
+  .c-meta .dot { width: 7px; height: 7px; background: var(--live); flex: none; }
+  .c-meta .sep { color: var(--rule-2); }
+  .c-meta b { font-weight: 700; color: var(--ink-2); }
+
+  .disc {
+    flex: none; width: 22px; height: 22px; line-height: 1;
+    background: transparent; border: 1px solid transparent; color: var(--ink-3);
+    font: inherit; font-size: 10px; cursor: pointer;
+  }
+  .disc:hover { color: var(--ink); border-color: var(--rule); }
+
+  .c-act { flex: none; width: 88px; display: flex; flex-direction: column; gap: 4px; }
+  .btn {
+    height: 22px; width: 100%; padding: 0 4px;
+    font-family: inherit; font-size: 10px; line-height: 1;
+    letter-spacing: .06em; white-space: nowrap;
+    background: transparent; border: 1px solid var(--rule); color: var(--ink-2); cursor: pointer;
+  }
+  .btn:hover { border-color: var(--rule-2); color: var(--ink); }
+  .btn.pri {
+    background: var(--pri-bg); border-color: var(--pri-bd); color: var(--pri-tx);
+    font-weight: 700; box-shadow: inset 0 1px 0 var(--pri-edge);
+  }
+  .btn.dgr { border-color: var(--red); color: var(--red); font-weight: 700; }
+  .btn:focus-visible { outline: 2px solid var(--live); outline-offset: 1px; }
+
+  /* ── Panel de servicios ───────────────────────────────────────────────── */
+  .svc { margin: 9px -10px -9px -8px; background: var(--panel); border-top: 1px solid var(--rule-2); }
+  .svc-hd {
+    display: flex; align-items: baseline; gap: 8px;
+    padding: 7px 10px 7px 8px; border-bottom: 1px solid var(--rule);
+    font-size: 9px; letter-spacing: .2em; color: var(--ink-3);
+  }
+  .svc-hd b { margin-left: auto; font-size: 11px; letter-spacing: 0; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+  .svc-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 8px; border-bottom: 1px solid var(--rule);
+  }
+  .svc-row:last-child { border-bottom: 0; }
+  .svc-row .st { width: 9px; height: 9px; flex: none; background: var(--live); }
+  .svc-row .st.down { background: var(--red); }
+  .svc-row .nm  { font-size: 11px; font-weight: 700; color: var(--ink); min-width: 96px; }
+  .svc-row .stt { font-size: 9px; letter-spacing: .14em; color: var(--ink-3); min-width: 58px; }
+  .svc-row .port { font-size: 10px; font-weight: 700; color: var(--ink-2); padding: 2px 6px; border: 1px solid var(--rule); }
+  .svc-acts { margin-left: auto; display: flex; gap: 3px; }
+  .svc-acts .btn { width: auto; padding: 0 7px; height: 21px; }
+
+  .boot-line { padding: 12px 10px; font-size: 10px; letter-spacing: .14em; color: var(--ink-3); }
+
+  /* ── Footer ───────────────────────────────────────────────────────────── */
+  .w-ft {
+    display: flex; align-items: center; gap: 12px;
+    padding: 9px 12px; background: var(--shell);
+    border-top: var(--band-w) solid var(--band);
+    box-shadow: inset 0 1px 0 var(--edge);
+    font-size: 9px; letter-spacing: .16em; color: var(--ink-3);
+  }
+  .w-ft .barcode { height: 18px; }
+  .w-ft .sn { margin-left: auto; letter-spacing: .1em; }
+
+  /* ═══ Paleta ════════════════════════════════════════════════════════════ */
+  .pal { margin-top: 44px; }
+  .pal h2, .notes h2 {
+    margin: 0 0 14px; font-size: 20px; font-weight: 650; letter-spacing: -.01em;
+  }
+  .swatches {
+    display: grid; gap: 1px; background: var(--pg-rule);
+    border: 1px solid var(--pg-rule);
+    grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+  }
+  .sw { background: var(--pg-card); padding: 12px 14px; }
+  .sw .chipc { height: 26px; border: 1px solid var(--pg-rule); margin-bottom: 9px; }
+  .sw .tk {
+    font: 600 10px/1.3 ui-monospace, "JetBrains Mono", "DejaVu Sans Mono", monospace;
+    letter-spacing: .06em; word-break: break-all;
+  }
+  .sw .hx {
+    margin-top: 3px;
+    font: 500 10px/1.3 ui-monospace, "JetBrains Mono", "DejaVu Sans Mono", monospace;
+    color: var(--pg-mut);
+  }
+  .sw .rt { margin-top: 5px; font-size: 10.5px; color: var(--pg-mut); }
+
+  /* ═══ Notas ═════════════════════════════════════════════════════════════ */
+  .notes { margin-top: 44px; }
+  .notegrid {
+    display: grid; gap: 1px; background: var(--pg-rule);
+    border: 1px solid var(--pg-rule);
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  }
+  .note { background: var(--pg-card); padding: 16px 18px; }
+  .note h3 {
+    margin: 0 0 7px; font-size: 14px; font-weight: 650; letter-spacing: -.01em;
+    display: flex; align-items: baseline; gap: 9px;
+  }
+  .note h3 em {
+    font: 600 10px/1 ui-monospace, "JetBrains Mono", "DejaVu Sans Mono", monospace;
+    letter-spacing: .14em; font-style: normal; color: var(--pg-acc);
+  }
+  .note p { margin: 0; font-size: 13.5px; line-height: 1.6; color: var(--pg-mut); }
+  .note p + p { margin-top: 8px; }
+  .note code {
+    font: 500 12px ui-monospace, "JetBrains Mono", "DejaVu Sans Mono", monospace;
+    background: var(--pg-rule); padding: 1px 5px; color: var(--pg-fg);
+  }
+  .note strong { color: var(--pg-fg); font-weight: 600; }
+</style>
+
+<div class="page">
+  <p class="eyebrow">kde-code-projects // dark v2</p>
+  <h1>El mismo chasis que devcommands</h1>
+  <p class="lede">
+    La primera versión oscura solo daba la vuelta a la tinta: papel negro, tinta blanca. Eso convierte
+    cada borde estructural en una línea casi blanca y el widget se lee como una reja. Aquí se toma
+    prestado el material de <code>kde-devcommands</code>: planos casi negros con tinte verde y muy poco
+    salto entre ellos, la profundidad puesta en <strong>1 px de luz arriba</strong> en vez de en un
+    contorno claro, y un único acento <code>#2fe07a</code>.
+  </p>
+
+  <div class="compare">
+    <div class="stage" data-variant="old">
+      <p class="stage-cap"><b>A · anterior</b> — se invierte la tinta</p>
+    </div>
+    <div class="stage pick" data-variant="new">
+      <p class="stage-cap"><b>B · propuesta</b> — chasis devcommands</p>
+    </div>
+  </div>
+
+  <section class="pal">
+    <h2>Los tokens, y de dónde sale cada uno</h2>
+    <div class="swatches">
+      <div class="sw"><div class="chipc" style="background:#131715"></div>
+        <div class="tk">clrBg</div><div class="hx">#131715</div>
+        <div class="rt">clrSunken · la bandeja donde caen las tarjetas</div></div>
+      <div class="sw"><div class="chipc" style="background:#181c1a"></div>
+        <div class="tk">clrShell</div><div class="hx">#181c1a</div>
+        <div class="rt">clrSurface · barra de herramientas y pie</div></div>
+      <div class="sw"><div class="chipc" style="background:#1b201e"></div>
+        <div class="tk">clrPanel</div><div class="hx">#1b201e</div>
+        <div class="rt">interpolado · panel de servicios</div></div>
+      <div class="sw"><div class="chipc" style="background:#222724"></div>
+        <div class="tk">clrCard</div><div class="hx">#222724</div>
+        <div class="rt">clrRaised · tarjeta y cabecera</div></div>
+      <div class="sw"><div class="chipc" style="background:#313732"></div>
+        <div class="tk">clrHair</div><div class="hx">#313732</div>
+        <div class="rt">clrLine · filete de 1 px</div></div>
+      <div class="sw"><div class="chipc" style="background:#414944"></div>
+        <div class="tk">clrHair2</div><div class="hx">#414944</div>
+        <div class="rt">divisoria estructural</div></div>
+      <div class="sw"><div class="chipc" style="background:#e3e8e4"></div>
+        <div class="tk">clrText</div><div class="hx">#e3e8e4</div>
+        <div class="rt">12,3:1 sobre la tarjeta</div></div>
+      <div class="sw"><div class="chipc" style="background:#b0b9b4"></div>
+        <div class="tk">clrSub</div><div class="hx">#b0b9b4</div>
+        <div class="rt">7,5:1 · rutas y valores</div></div>
+      <div class="sw"><div class="chipc" style="background:#8b948e"></div>
+        <div class="tk">clrMuted</div><div class="hx">#8b948e</div>
+        <div class="rt">4,9:1 · etiquetas</div></div>
+      <div class="sw"><div class="chipc" style="background:#2fe07a"></div>
+        <div class="tk">clrGreen</div><div class="hx">#2fe07a</div>
+        <div class="rt">clrAccent · 8,7:1, sirve de relleno y de texto</div></div>
+      <div class="sw"><div class="chipc" style="background:#06210f"></div>
+        <div class="tk">clrOnGreen</div><div class="hx">#06210f</div>
+        <div class="rt">9,8:1 sobre el verde</div></div>
+      <div class="sw"><div class="chipc" style="background:#ff6b4a"></div>
+        <div class="tk">clrRed</div><div class="hx">#ff6b4a</div>
+        <div class="rt">nuevo · 5,4:1, al brillo del acento</div></div>
+    </div>
+  </section>
+
+  <section class="notes">
+    <h2>Qué cambia respecto a la versión A</h2>
+    <div class="notegrid">
+      <div class="note">
+        <h3><em>01</em> La profundidad es luz, no contorno</h3>
+        <p>
+          En A cada plano se separaba del siguiente con un borde a <code>#e9e9e3</code> — cabecera, pie
+          y tarjeta viva, todos recortados en blanco. Aquí los planos se distinguen por el salto de
+          valor (<code>#131715</code> → <code>#181c1a</code> → <code>#222724</code>, apenas 3 % cada uno)
+          más <strong>1 px de luz al 12,5 % en el canto superior</strong>. Es exactamente el
+          <code>clrEdge</code> de devcommands: la pieza parece tener grosor en vez de estar dibujada.
+        </p>
+      </div>
+      <div class="note">
+        <h3><em>02</em> Los filetes de cabecera y pie bajan a 1 px</h3>
+        <p>
+          Los 2 px de tinta funcionan en claro porque el negro sobre gris es el contraste máximo
+          disponible. En oscuro esa misma banda a <code>#e9e9e3</code> es lo más brillante de todo el
+          widget y se lleva la mirada por delante del nombre del proyecto. Pasan a
+          <code>#414944</code> a 1 px: siguen cerrando la composición sin competir.
+        </p>
+      </div>
+      <div class="note">
+        <h3><em>03</em> La primaria deja de ser una losa blanca</h3>
+        <p>
+          Con la tinta invertida, <code>LAUNCH</code> y <code>+ ADD</code> quedaban como rectángulos
+          blancos: la regla 3 se cumplía, pero el resultado era un flash. Ahora la primaria se dibuja
+          como la <strong>tecla</strong> de devcommands —relleno <code>#2f3733</code>, filete
+          <code>#4a534d</code> y su luz arriba—: sigue siendo el único botón con cuerpo, y por tanto
+          sigue siendo el primero que se ve, sin ser lo más brillante de la pantalla.
+        </p>
+      </div>
+      <div class="note">
+        <h3><em>04</em> Un verde que vale para relleno y para texto</h3>
+        <p>
+          En A hacían falta dos verdes (<code>#2fae4f</code> para rellenar, <code>#6fcb84</code> para
+          escribir). El <code>#2fe07a</code> de devcommands da 8,7:1 sobre la tarjeta, así que el
+          contador <code>02/08</code> y el badge <code>RUNNING</code> usan <strong>el mismo color</strong>
+          — un token menos y la regla 1 más nítida: verde, en cualquier forma, significa vivo.
+        </p>
+      </div>
+      <div class="note">
+        <h3><em>05</em> El rojo se sube al brillo del acento</h3>
+        <p>
+          devcommands no tiene destructiva, así que este color hay que inventarlo. <code>#ff6b4a</code>
+          está calibrado contra el acento: mismo rango de luminosidad, 5,4:1 sobre la tarjeta. El
+          <code>#9c2b15</code> del tema claro cae a 2:1 aquí y <code>STOP</code> desaparecía.
+        </p>
+      </div>
+      <div class="note">
+        <h3><em>06</em> Lo que no se copia</h3>
+        <p>
+          devcommands redondea a <code>radius: 3</code> y alterna el fondo en hover. Aquí se mantienen
+          los <strong>cantos vivos</strong> y el hover de filete: es la identidad de este widget, y el
+          material se puede compartir sin heredar la forma. Del mismo modo, el código de barras baja a
+          <code>opacity .85</code> como allí, porque a tinta plena sobre negro pesaba demasiado.
+        </p>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- El widget se escribe una vez y se clona en las dos escenas: así la única
+     diferencia entre A y B son los tokens, no el marcado. -->
+<template id="tpl">
+  <div class="w">
+    <div class="w-hd">
+      <div class="brand">
+        <div class="barcode" aria-hidden="true">
+          <i style="width:2px"></i><i class="s" style="width:1px"></i><i style="width:4px"></i><i class="s" style="width:2px"></i><i style="width:1px"></i><i class="s" style="width:1px"></i><i style="width:3px"></i><i class="s" style="width:2px"></i><i style="width:1px"></i><i class="s" style="width:1px"></i><i style="width:2px"></i><i class="s" style="width:3px"></i><i style="width:4px"></i><i class="s" style="width:1px"></i><i style="width:1px"></i><i class="s" style="width:2px"></i><i style="width:2px"></i><i class="s" style="width:1px"></i><i style="width:3px"></i>
+        </div>
+        <div>
+          <h2 class="w-title">DEV PROJECTS</h2>
+          <p class="w-sub">PROJECT LAUNCHER</p>
+        </div>
+      </div>
+      <div class="readout">
+        <div class="rd-num"><b>02</b><span>/08</span></div>
+        <div class="rd-lb">ACTIVOS / TOTAL</div>
+      </div>
+    </div>
+
+    <div class="w-tb">
+      <button class="tb" aria-pressed="false">⌕ SRCH</button>
+      <button class="tb" aria-pressed="false">⇅ MOVE</button>
+      <button class="tb" aria-pressed="false">✎ EDIT</button>
+      <button class="tb" aria-pressed="false">✕ DEL</button>
+      <button class="tb add">+ ADD</button>
+    </div>
+
+    <div class="w-list">
+      <article class="card live">
+        <div class="c-row">
+          <div class="c-info">
+            <div class="c-top">
+              <h3 class="c-name">INFRACCIONES-AUTOMOTRICES</h3>
+              <span class="chip on">RUNNING</span>
+              <button class="disc" aria-label="Plegar servicios">▲</button>
+            </div>
+            <p class="c-path">~/Code/infracciones-automotrices</p>
+            <div class="c-meta">
+              <button class="tag">docker-compose.yml ▾</button>
+              <span class="dot"></span><b>3</b> servicios
+              <span class="sep">·</span> :8080 · :5432
+            </div>
+          </div>
+          <div class="c-act">
+            <button class="btn">OPEN</button>
+            <button class="btn">↓ PULL</button>
+            <button class="btn dgr">■ STOP</button>
+          </div>
+        </div>
+
+        <div class="svc">
+          <div class="svc-hd">SERVICIOS <b>03</b></div>
+          <div class="svc-row">
+            <span class="st"></span><span class="nm">api</span>
+            <span class="stt">RUNNING</span><span class="port">:8080</span>
+            <span class="svc-acts">
+              <button class="btn">LOG</button><button class="btn">↺</button>
+              <button class="btn">SH</button><button class="btn">BLD</button>
+            </span>
+          </div>
+          <div class="svc-row">
+            <span class="st"></span><span class="nm">db</span>
+            <span class="stt">RUNNING</span><span class="port">:5432</span>
+            <span class="svc-acts">
+              <button class="btn">LOG</button><button class="btn">↺</button>
+              <button class="btn">SH</button><button class="btn">BLD</button>
+            </span>
+          </div>
+          <div class="svc-row">
+            <span class="st down"></span><span class="nm">worker</span>
+            <span class="stt">EXITED</span>
+            <span class="svc-acts">
+              <button class="btn">LOG</button><button class="btn">↺</button>
+              <button class="btn">BLD</button>
+            </span>
+          </div>
+        </div>
+      </article>
+
+      <article class="card boot">
+        <div class="c-row">
+          <div class="c-info">
+            <div class="c-top">
+              <h3 class="c-name">JOMELY</h3>
+              <span class="chip boot">STARTING</span>
+              <button class="disc" aria-label="Plegar servicios">▲</button>
+            </div>
+            <p class="c-path">~/Code/apptec/jomely</p>
+            <div class="c-meta"><button class="tag">docker-compose.yml ▾</button></div>
+          </div>
+          <div class="c-act">
+            <button class="btn">OPEN</button>
+            <button class="btn dgr">■ STOP</button>
+          </div>
+        </div>
+        <div class="svc"><p class="boot-line">◌  ARRANCANDO SERVICIOS…</p></div>
+      </article>
+
+      <article class="card">
+        <div class="c-row">
+          <div class="c-info">
+            <div class="c-top">
+              <h3 class="c-name">HUBBLE</h3>
+              <span class="chip">OFFLINE</span>
+            </div>
+            <p class="c-path">~/Code/apptec/hubble</p>
+            <div class="c-meta"><button class="tag">docker-compose.yml ▾</button></div>
+          </div>
+          <div class="c-act">
+            <button class="btn">OPEN</button>
+            <button class="btn">↓ PULL</button>
+            <button class="btn pri">▶ LAUNCH</button>
+          </div>
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="c-row">
+          <div class="c-info">
+            <div class="c-top">
+              <h3 class="c-name">KDE-CODE-PROJECTS</h3>
+              <span class="chip">OFFLINE</span>
+            </div>
+            <p class="c-path">~/Code/kde-code-projects</p>
+          </div>
+          <div class="c-act"><button class="btn">OPEN</button></div>
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="c-row">
+          <div class="c-info">
+            <div class="c-top">
+              <h3 class="c-name">CLAUDE-CHATS</h3>
+              <span class="chip">OFFLINE</span>
+            </div>
+            <p class="c-path">~/Code/claude-chats</p>
+          </div>
+          <div class="c-act"><button class="btn">OPEN</button></div>
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="c-row">
+          <div class="c-info">
+            <div class="c-top">
+              <h3 class="c-name">KDE-EWELINK-WIDGET</h3>
+              <span class="chip">OFFLINE</span>
+            </div>
+            <p class="c-path">~/Code/kde-ewelink-widget</p>
+          </div>
+          <div class="c-act"><button class="btn">OPEN</button></div>
+        </div>
+      </article>
+    </div>
+
+    <div class="w-ft">
+      <div class="barcode" aria-hidden="true">
+        <i style="width:1px"></i><i class="s" style="width:2px"></i><i style="width:3px"></i><i class="s" style="width:1px"></i><i style="width:2px"></i><i class="s" style="width:2px"></i><i style="width:4px"></i><i class="s" style="width:1px"></i><i style="width:1px"></i><i class="s" style="width:2px"></i><i style="width:3px"></i><i class="s" style="width:1px"></i><i style="width:2px"></i>
+      </div>
+      <span>KDE::PLASMA PROJECT LAUNCHER</span>
+      <span class="sn">094-72-601 · v2.0</span>
+    </div>
+  </div>
+</template>
+
+<script>
+  (function () {
+    var tpl = document.getElementById("tpl");
+    document.querySelectorAll(".stage[data-variant]").forEach(function (stage) {
+      var w = tpl.content.firstElementChild.cloneNode(true);
+      w.classList.add(stage.dataset.variant);
+      stage.appendChild(w);
+    });
+  })();
+</script>
