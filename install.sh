@@ -18,8 +18,12 @@ if ! command -v konsole &>/dev/null; then
     sudo pacman -S --needed --noconfirm konsole
 fi
 
-if [ "$SCRIPT_DIR" = "$INSTALL_DIR" ]; then
-    echo "Already running from install location, skipping copy."
+# Resolved paths, not a string compare: a dev checkout is symlinked into place,
+# and the literal test missed that. The copy branch would then see a directory
+# (-d follows the link), delete the symlink and leave a stale copy where the
+# link used to be, silently undoing the dev setup.
+if [ "$(readlink -f "$INSTALL_DIR" 2>/dev/null)" = "$SCRIPT_DIR" ]; then
+    echo "Install path already resolves to this checkout, skipping copy."
 else
     if [ -d "$INSTALL_DIR" ]; then
         echo "Removing previous installation..."
