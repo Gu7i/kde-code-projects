@@ -34,18 +34,22 @@ fi
 # and the literal test missed that. The copy branch would then see a directory
 # (-d follows the link), delete the symlink and leave a stale copy where the
 # link used to be, silently undoing the dev setup.
-if [ "$(readlink -f "$INSTALL_DIR" 2>/dev/null)" = "$SCRIPT_DIR" ]; then
-    echo "Install path already resolves to this checkout, nothing to do."
-elif [ "$MODE" = "link" ]; then
-    # -e is false for a dangling symlink, so test -L as well or a broken link
-    # would survive and ln would fail on it.
-    if [ -e "$INSTALL_DIR" ] || [ -L "$INSTALL_DIR" ]; then
-        echo "Replacing $INSTALL_DIR..."
-        rm -rf "$INSTALL_DIR"
+if [ "$MODE" = "link" ]; then
+    if [ "$(readlink -f "$INSTALL_DIR" 2>/dev/null)" = "$SCRIPT_DIR" ]; then
+        echo "Already linked to this checkout."
+    else
+        # -e is false for a dangling symlink, so test -L as well or a broken
+        # link would survive and ln would fail on it.
+        if [ -e "$INSTALL_DIR" ] || [ -L "$INSTALL_DIR" ]; then
+            echo "Replacing $INSTALL_DIR..."
+            rm -rf "$INSTALL_DIR"
+        fi
+        mkdir -p "$(dirname "$INSTALL_DIR")"
+        ln -s "$SCRIPT_DIR" "$INSTALL_DIR"
+        echo "Linked $INSTALL_DIR -> $SCRIPT_DIR"
     fi
-    mkdir -p "$(dirname "$INSTALL_DIR")"
-    ln -s "$SCRIPT_DIR" "$INSTALL_DIR"
-    echo "Linked $INSTALL_DIR -> $SCRIPT_DIR"
+elif [ "$(readlink -f "$INSTALL_DIR" 2>/dev/null)" = "$SCRIPT_DIR" ]; then
+    echo "Install path already resolves to this checkout, skipping copy."
 else
     if [ -d "$INSTALL_DIR" ]; then
         echo "Removing previous installation..."
