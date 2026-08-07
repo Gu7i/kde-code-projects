@@ -2,6 +2,25 @@
 
 set -e
 
+# plasmashell is not necessarily managed by systemd. When the unit is disabled
+# and the session launches plasmashell directly (the default here), a
+# `systemctl --user restart plasma-plasmashell` starts a *second* instance that
+# exits at once on the single-instance guard: the running shell never reloads,
+# so new QML is never picked up. Verified 2026-08-07 — the unit was
+# inactive/disabled while plasmashell was running normally.
+restart_plasmashell() {
+    if systemctl --user is-active --quiet plasma-plasmashell.service; then
+        systemctl --user restart plasma-plasmashell.service
+    elif pgrep -x plasmashell >/dev/null 2>&1; then
+        # --replace takes the DBus name over from the running instance, which
+        # is the only thing that actually reloads the QML here.
+        setsid plasmashell --replace >/dev/null 2>&1 &
+        sleep 3
+    else
+        echo "  plasmashell isn't running — it will pick this up at login."
+    fi
+}
+
 PLUGIN_ID="com.guti.codeprojects"
 INSTALL_DIR="$HOME/.local/share/plasma/plasmoids/$PLUGIN_ID"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -63,8 +82,7 @@ else
 fi
 
 echo "Restarting Plasma shell..."
-systemctl --user restart plasma-plasmashell
-
+restart_plasmashell
 echo ""
 echo "Done! Add the widget to your panel:"
 echo "  Right-click panel → Add Widgets → search 'Code Projects'"
