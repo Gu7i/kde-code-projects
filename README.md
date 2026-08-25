@@ -34,10 +34,11 @@ Dropdowns for editor and compose file selection use a custom dark HUD overlay in
 - **Docker Compose support** — if a project contains a compose file (`docker-compose*.yml/yaml`, `compose*.yml/yaml`):
   - **OPEN / ↓ PULL / ▶ LAUNCH** — stacked vertically on the right side of each card
   - **▶ LAUNCH** (ink) — runs `docker compose up -d`; service panel expands with live startup status
-  - **■ STOP** — runs `docker compose down`; also available during startup to cancel
+  - **■ STOP** — runs `docker compose down` across *all* profiles, regardless of which one is selected, so no profile-gated service (e.g. `ngrok`) is left running orphaned; also available during startup to cancel
   - **↓ PULL** — runs `docker compose pull` to update images (opens Konsole)
   - **▼/▲** — expand/collapse the service panel while Docker is running
   - **File selector** — when multiple compose files exist, the FILE row opens a custom HUD dropdown to pick the active one
+  - **Profile selector** — when the compose file declares `profiles:` (e.g. a service gated behind `--profile fintoc`), a PROFILE dropdown appears next to FILE; picking one adds `--profile <name>` to every compose command (`up`, `ps`, `pull`, etc.) so those services become visible and launchable. Defaults to none, matching plain `docker compose` behavior
   - Spinner (`BusyIndicator`) while `docker compose down` is in progress
 - **Live startup status** — while services start, each shows a pulsing status square; transitions to solid green (running) or red (exited/dead); polls every 1s during startup, every 3s otherwise; 60s safety timeout
 - **Service panel** (shown per project when Docker is running):

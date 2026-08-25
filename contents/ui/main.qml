@@ -602,6 +602,8 @@ PlasmoidItem {
                             property var composeFilePaths:     []
                             property var composeFileNames:     []
                             property int selectedComposeIndex: 0
+                            property var composeProfiles:      []
+                            property int selectedProfileIndex: -1
 
                             property string currentEditor: {
                                 var editors = Plasmoid.configuration.projectEditors
@@ -614,10 +616,21 @@ PlasmoidItem {
                                 editors[origIndex] = cmd
                                 Plasmoid.configuration.projectEditors = editors
                             }
-                            function dockerComposeBase() {
-                                if (composeFilePaths.length > 0)
-                                    return "docker compose -f '" + composeFilePaths[selectedComposeIndex] + "'"
-                                return "docker compose --project-directory '" + projectPath + "'"
+                            function dockerComposeBase(allProfiles) {
+                                var base = composeFilePaths.length > 0
+                                    ? "docker compose -f '" + composeFilePaths[selectedComposeIndex] + "'"
+                                    : "docker compose --project-directory '" + projectPath + "'"
+                                // Servicios como el ngrok de jomely viven detrás de un
+                                // profile y no arrancan con un `up -d` a secas; sin el
+                                // flag, quedan invisibles para todo el widget.
+                                if (allProfiles)
+                                    // STOP debe bajar todo, sin importar qué profile esté
+                                    // seleccionado — si no, un servicio con profile queda
+                                    // corriendo huérfano tras cerrar el proyecto.
+                                    base += " --profile '*'"
+                                else if (selectedProfileIndex >= 0 && selectedProfileIndex < composeProfiles.length)
+                                    base += " --profile '" + composeProfiles[selectedProfileIndex] + "'"
+                                return base
                             }
 
                             // ── Data sources ──────────────────────────────────
@@ -636,7 +649,9 @@ PlasmoidItem {
                                     projectItem.composeFileNames     = names
                                     projectItem.composeFilePaths     = paths
                                     projectItem.selectedComposeIndex = 0
+                                    projectItem.selectedProfileIndex = -1
                                     projectItem.checkStatus()
+                                    projectItem.fetchProfiles()
                                 }
                             }
 
@@ -689,11 +704,25 @@ PlasmoidItem {
                                 }
                             }
 
+                            P5Support.DataSource {
+                                id: profilesSource
+                                engine: "executable"; connectedSources: []
+                                onNewData: (sourceName, data) => {
+                                    var lines = data["stdout"].trim().split("\n").filter(l => l.length > 0)
+                                    projectItem.composeProfiles = lines
+                                    if (projectItem.selectedProfileIndex >= lines.length) projectItem.selectedProfileIndex = -1
+                                    disconnectSource(sourceName)
+                                }
+                            }
+
                             function checkStatus() {
                                 statusSource.connectSource(dockerComposeBase() + " ps --status running -q 2>/dev/null")
                             }
                             function fetchContainers() {
                                 containersSource.connectSource(dockerComposeBase() + " ps --format '{{.Service}}|{{.State}}|{{.Ports}}' 2>/dev/null")
+                            }
+                            function fetchProfiles() {
+                                profilesSource.connectSource(dockerComposeBase() + " config --profiles 2>/dev/null")
                             }
 
                             // ── Timers ────────────────────────────────────────
@@ -726,7 +755,7 @@ PlasmoidItem {
                                     if (root.expanded) {
                                         if (dockerFiles.count > 0 && !projectItem.isStarting) projectItem.checkStatus()
                                     } else {
-                                        editorPopup.close(); composePopup.close()
+                                        editorPopup.close(); composePopup.close(); profilePopup.close()
                                         fullRep.draggedIndex = -1; fullRep.dropTargetIndex = -1
                                     }
                                 }
@@ -1039,11 +1068,85 @@ PlasmoidItem {
                                                                         onClicked: {
                                                                             if (projectItem.selectedComposeIndex !== index) {
                                                                                 projectItem.selectedComposeIndex = index
+                                                                                projectItem.selectedProfileIndex = -1
+                                                                                projectItem.isExpanded = false
+                                                                                projectItem.isRunning  = false
+                                                                                projectItem.checkStatus()
+                                                                                projectItem.fetchProfiles()
+                                                                            }
+                                                                            composePopup.close()
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+
+                                                    // PROFILE — servicios como el ngrok de jomely
+                                                    // viven detrás de un profile no activo por
+                                                    // defecto; sin este selector eran invisibles.
+                                                    Rectangle {
+                                                        id: profileBtn
+                                                        visible: projectItem.composeProfiles.length > 0
+                                                        implicitWidth: profileTxt.implicitWidth + 26
+                                                        implicitHeight: 20
+                                                        color: "transparent"
+                                                        border.color: root.clrHair
+                                                        border.width: 1
+                                                        RowLayout {
+                                                            anchors.fill: parent
+                                                            anchors.leftMargin: 7
+                                                            anchors.rightMargin: 5
+                                                            spacing: 4
+                                                            Text {
+                                                                id: profileTxt; Layout.fillWidth: true
+                                                                text: projectItem.selectedProfileIndex >= 0 ? projectItem.composeProfiles[projectItem.selectedProfileIndex] : "NONE"
+                                                                font.family: root.mono; font.pixelSize: root.fzNormal; color: root.clrSub
+                                                            }
+                                                            Text { text: "▾"; font.family: root.mono; font.pixelSize: 9; color: root.clrMuted }
+                                                        }
+                                                        MouseArea {
+                                                            anchors.fill: parent
+                                                            enabled: !projectItem.isLoading && !projectItem.isStarting
+                                                            onClicked: profilePopup.open()
+                                                        }
+                                                        QQC2.Popup {
+                                                            id: profilePopup
+                                                            y: parent.height + 2
+                                                            width: 160; padding: 0
+                                                            onAboutToShow: fullRep.placeMenu(profilePopup, profileBtn, projectItem.composeProfiles.length + 1, 28)
+                                                            background: Rectangle { color: root.clrMenuBg; border.color: root.clrBorder; border.width: 1 }
+                                                            contentItem: ListView {
+                                                                implicitWidth: 160
+                                                                implicitHeight: contentHeight
+                                                                clip: true
+                                                                boundsBehavior: Flickable.StopAtBounds
+                                                                model: ["NONE"].concat(projectItem.composeProfiles)
+                                                                delegate: Rectangle {
+                                                                    width: 160; height: 28
+                                                                    property int profIndex: index - 1
+                                                                    color: pItemHov.containsMouse ? root.clrMenuHov : root.clrMenuBg
+                                                                    Rectangle { width: 3; height: parent.height; color: root.clrMenuTx; visible: profIndex === projectItem.selectedProfileIndex }
+                                                                    Text {
+                                                                        anchors.verticalCenter: parent.verticalCenter
+                                                                        x: 12; width: parent.width - 20
+                                                                        text: modelData
+                                                                        elide: Text.ElideMiddle
+                                                                        font.family: root.mono; font.pixelSize: 11
+                                                                        font.bold: profIndex === projectItem.selectedProfileIndex
+                                                                        color: profIndex === projectItem.selectedProfileIndex ? root.clrMenuTx : root.clrMenuDim
+                                                                    }
+                                                                    HoverHandler { id: pItemHov }
+                                                                    MouseArea {
+                                                                        anchors.fill: parent
+                                                                        onClicked: {
+                                                                            if (projectItem.selectedProfileIndex !== profIndex) {
+                                                                                projectItem.selectedProfileIndex = profIndex
                                                                                 projectItem.isExpanded = false
                                                                                 projectItem.isRunning  = false
                                                                                 projectItem.checkStatus()
                                                                             }
-                                                                            composePopup.close()
+                                                                            profilePopup.close()
                                                                         }
                                                                     }
                                                                 }
@@ -1175,7 +1278,7 @@ PlasmoidItem {
                                                         onClicked: {
                                                             projectItem.isStarting = false; projectItem.isLoading = true; projectItem.isExpanded = false
                                                             startupTimeoutTimer.stop()
-                                                            downSource.connectSource("sh -c \"" + projectItem.dockerComposeBase() + " down\"")
+                                                            downSource.connectSource("sh -c \"" + projectItem.dockerComposeBase(true) + " down\"")
                                                         }
                                                     }
                                                     PlasmaComponents.ToolTip { text: "Detener Docker Compose"; visible: stopHov.hovered }
